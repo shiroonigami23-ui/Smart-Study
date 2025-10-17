@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": "18"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.15.0",
     "cors": "^2.8.5",
