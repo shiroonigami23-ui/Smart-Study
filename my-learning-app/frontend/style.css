@@ -1,0 +1,15 @@
+.option-btn {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 5px;
+}
+
+.option-btn:hover {
+    background-color: #e9e9e9;
+}
