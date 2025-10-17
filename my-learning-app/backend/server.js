@@ -1,18 +1,21 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
-const cors = require('cors');
+const path = require('path'); // We need this module
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+
+// This is the updated line: It serves files from the '../frontend' directory
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post('/generate', async (req, res) => {
     try {
         const { topic, type } = req.body;
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest"});
+        // Make sure the model name is correct, this one is stable.
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         let prompt = '';
 
         if (type === 'notes') {
@@ -26,14 +29,13 @@ app.post('/generate', async (req, res) => {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         res.json({ content: response.text() });
-
     } catch (error) {
         console.error("API Error:", error.message);
         res.status(500).send('Error communicating with the Generative AI API.');
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`Server running. Open http://localhost:${PORT} in your browser.`);
 });
