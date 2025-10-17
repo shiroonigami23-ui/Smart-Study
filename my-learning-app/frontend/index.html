@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Learning Tool</title>
+    <title>AI Learning Tool</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Interactive Learning Tool 🧠</h1>
-        <p>Enter a topic to generate notes, fun facts, or a quiz!</p>
-        <input type="text" id="topic-input" placeholder="e.g., Photosynthesis">
+        <h1>AI Learning Tool 🧠</h1>
+        <p>Enter any topic to generate notes, fun facts, or a quiz!</p>
+        
+        <input type="text" id="topic-input" placeholder="e.g., The Solar System">
+        
         <div class="buttons">
             <button id="notes-btn">Get Notes</button>
             <button id="facts-btn">Get Fun Facts</button>
             <button id="quiz-btn">Generate Quiz</button>
         </div>
+        
         <div id="output-container" class="output">
-            </div>
+            <p>Your generated content will appear here...</p>
+        </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
