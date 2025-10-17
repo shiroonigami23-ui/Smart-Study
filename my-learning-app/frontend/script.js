@@ -21,13 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Send a request to our local backend server
-            const response = await fetch('http://localhost:3000/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ topic: topic, type: type }),
-            });
+            // Paste the full JS code from before, but make sure
+// the fetch URL is changed to this:
+const response = await fetch('/generate', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ topic: topic, type: type }),
+});
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
