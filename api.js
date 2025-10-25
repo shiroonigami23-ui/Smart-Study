@@ -9,7 +9,9 @@ const {
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     updateProfile,
-    onAuthStateChanged 
+    onAuthStateChanged,
+    GoogleAuthProvider, 
+    signInWithPopup    
 } = firebase.auth;
 const { 
     getFirestore, 
