@@ -86,17 +86,19 @@ function showFlashcardView(viewId) {
  * Updates all statistics and text on the dashboard.
  */
 function updateDashboardStats() {
-    document.getElementById('welcome-message').textContent = `Welcome back, ${appState.userProfile.name}!`;
-    document.getElementById('streak-count').textContent = appState.userProfile.streak;
-    document.getElementById('total-study-time').textContent = formatTime(appState.userProfile.studyTime);
-    document.getElementById('quizzes-completed').textContent = appState.userProfile.quizzesCompleted;
-    document.getElementById('current-level').textContent = appState.userProfile.level;
-    document.getElementById('total-xp').textContent = appState.userProfile.xp;
-    
-    // Update latest badges
-    const latestBadgesDiv = document.getElementById('latest-badges');
-    const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id));
-    
+    console.log("updateDashboardStats: Starting..."); // LOG
+    try {
+        document.getElementById('welcome-message').textContent = `Welcome back, ${appState.userProfile.name}!`;
+        document.getElementById('streak-count').textContent = appState.userProfile.streak;
+        document.getElementById('total-study-time').textContent = formatTime(appState.userProfile.studyTime); // utils.js
+        document.getElementById('quizzes-completed').textContent = appState.userProfile.quizzesCompleted;
+        document.getElementById('current-level').textContent = appState.userProfile.level;
+        document.getElementById('total-xp').textContent = appState.userProfile.xp;
+        
+        // Update latest badges (rest of function is the same)
+        const latestBadgesDiv = document.getElementById('latest-badges');
+        const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id)); // config.js state.js
+        
     if (earnedBadges.length > 0) {
         latestBadgesDiv.innerHTML = earnedBadges.slice(-3).map(badge => `
             <div class="badge-card" style="border-color: ${badge.color}">
@@ -109,8 +111,7 @@ function updateDashboardStats() {
             <div class="badge-placeholder">
                 <span>🏆</span>
                 <p>Complete activities to earn badges!</p>
-            </div>
-        `;
+            </div>`;
     }
 }
 
