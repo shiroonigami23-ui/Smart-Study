@@ -3,23 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Study Assistant - Your AI Learning Companion</title>
-    
+    <title>Smart Study Assistant - AI-Powered Learning</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Files -->
     <link rel="stylesheet" href="design-system.css">
     <link rel="stylesheet" href="main.css">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Firebase v8 Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Mammoth.js for DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- JSZip for EPUB (dependency) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- EPub.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
+    <!-- Auth Page -->
     <div id="auth-page" class="page active">
         <div class="auth-container">
             <div class="auth-card">
                 <div class="auth-header">
                     <div class="logo">
                         <span class="logo-icon">🎓</span>
-                        <h1>Smart Study Assistant</h1>
+                        <h1>Study Hub</h1>
                     </div>
                     <p class="tagline">Your AI-Powered Learning Companion</p>
                 </div>
@@ -29,55 +47,57 @@
                     <button class="auth-tab" data-tab="signup">Sign Up</button>
                 </div>
 
+                <!-- Login Form -->
                 <form id="login-form" class="auth-form active">
                     <div class="form-group">
                         <label for="login-email">Email</label>
-                        <input type="email" id="login-email" required placeholder="you@example.com">
+                        <input type="email" id="login-email" placeholder="your@email.com" required>
                     </div>
                     <div class="form-group">
                         <label for="login-password">Password</label>
-                        <input type="password" id="login-password" required placeholder="••••••••">
+                        <input type="password" id="login-password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-large">Login</button>
+                    <button type="button" id="google-login-btn" class="btn btn-ghost btn-block">
+                        <span>🔐</span> Sign in with Google
+                    </button>
                 </form>
 
+                <!-- Signup Form -->
                 <form id="signup-form" class="auth-form">
                     <div class="form-group">
                         <label for="signup-name">Full Name</label>
-                        <input type="text" id="signup-name" required placeholder="John Doe">
+                        <input type="text" id="signup-name" placeholder="John Doe" required>
                     </div>
                     <div class="form-group">
                         <label for="signup-email">Email</label>
-                        <input type="email" id="signup-email" required placeholder="you@example.com">
+                        <input type="email" id="signup-email" placeholder="your@email.com" required>
                     </div>
                     <div class="form-group">
                         <label for="signup-password">Password</label>
-                        <input type="password" id="signup-password" required placeholder="••••••••">
+                        <input type="password" id="signup-password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-large">Create Account</button>
                 </form>
 
-                <button id="guest-mode-btn" class="btn btn-ghost btn-block">Continue as Guest</button>
-        <div class="divider"><span>OR</span></div>
-        <button id="google-login-btn" class="btn btn-ghost btn-block">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white" style="margin-right: 8px;">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                <path d="M1 1h22v22H1z" fill="none"/>
-            </svg>
-            <span>Sign in with Google</span>
-        </button>
+                <button id="guest-mode-btn" class="btn btn-accent btn-block" style="margin-top: 20px;">
+                    <span>👤</span> Continue as Guest
+                </button>
+
+                <p style="text-align: center; color: rgba(255,255,255,0.7); margin-top: 20px; font-size: 14px;">
+                    Ready to level up your knowledge?
+                </p>
             </div>
         </div>
     </div>
 
+    <!-- Main App Page -->
     <div id="app-page" class="page">
+        <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-brand">
-                <span class="logo-icon">🎓</span>
-                <span class="brand-text">Smart Study Assistant</span>
+                <span>🎓</span>
+                <span class="brand-text">Study Hub</span>
             </div>
             <div class="nav-menu">
                 <button class="nav-item active" data-section="dashboard">
@@ -89,12 +109,20 @@
                     <span>Upload</span>
                 </button>
                 <button class="nav-item" data-section="quiz">
-                    <span class="nav-icon">📝</span>
+                    <span class="nav-icon">🎯</span>
                     <span>Quiz</span>
                 </button>
                 <button class="nav-item" data-section="flashcards">
                     <span class="nav-icon">🎴</span>
                     <span>Flashcards</span>
+                </button>
+                <button class="nav-item" data-section="notes">
+                    <span class="nav-icon">📝</span>
+                    <span>Notes</span>
+                </button>
+                <button class="nav-item" data-section="qa">
+                    <span class="nav-icon">❓</span>
+                    <span>Q&A</span>
                 </button>
                 <button class="nav-item" data-section="progress">
                     <span class="nav-icon">📈</span>
@@ -112,11 +140,12 @@
             </button>
         </nav>
 
+        <!-- Dashboard Section -->
         <section id="dashboard-section" class="app-section active">
             <div class="section-header">
                 <div>
-                    <h2 id="welcome-message">Welcome back, Student!</h2>
-                    <p class="section-subtitle">Ready to level up your knowledge?</p>
+                    <h2 id="welcome-message">Welcome back, Guest!</h2>
+                    <p class="section-subtitle">Ready to continue your learning journey?</p>
                 </div>
                 <div class="streak-badge">
                     <span class="streak-icon">🔥</span>
@@ -129,29 +158,29 @@
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">⏱️</div>
-                    <div class="stat-content">
+                    <div class="stat-icon" style="background: var(--gradient-1);">⏱️</div>
+                    <div>
                         <div class="stat-label">Study Time</div>
-                        <div class="stat-value" id="total-study-time">0h 0m</div>
+                        <div class="stat-value" id="total-study-time">0s</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📝</div>
-                    <div class="stat-content">
+                    <div class="stat-icon" style="background: var(--gradient-2);">✅</div>
+                    <div>
                         <div class="stat-label">Quizzes Completed</div>
                         <div class="stat-value" id="quizzes-completed">0</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">🎯</div>
-                    <div class="stat-content">
+                    <div class="stat-icon" style="background: var(--gradient-3);">⭐</div>
+                    <div>
                         <div class="stat-label">Current Level</div>
                         <div class="stat-value" id="current-level">1</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">⭐</div>
-                    <div class="stat-content">
+                    <div class="stat-icon" style="background: var(--gradient-4);">💎</div>
+                    <div>
                         <div class="stat-label">Total XP</div>
                         <div class="stat-value" id="total-xp">0</div>
                     </div>
@@ -159,47 +188,46 @@
             </div>
 
             <div class="action-grid">
-                <button class="action-card" data-action="upload">
+                <div class="action-card" data-action="upload">
                     <div class="action-icon">📤</div>
-                    <h3>Upload Content</h3>
-                    <p>Add study materials to generate quizzes and flashcards</p>
-                </button>
-                <button class="action-card" data-action="quiz">
-                    <div class="action-icon">📝</div>
-                    <h3>Take Quiz</h3>
-                    <p>Test your knowledge with AI-generated questions</p>
-                </button>
-                <button class="action-card" data-action="flashcards">
+                    <h3>Upload Materials</h3>
+                    <p>Add PDFs, images, docs, or paste text to generate study content</p>
+                </div>
+                <div class="action-card" data-action="quiz">
+                    <div class="action-icon">🎯</div>
+                    <h3>Start Quiz</h3>
+                    <p>Test your knowledge and earn XP</p>
+                </div>
+                <div class="action-card" data-action="flashcards">
                     <div class="action-icon">🎴</div>
                     <h3>Review Flashcards</h3>
-                    <p>Study with spaced repetition flashcards</p>
-                </button>
-                <button class="action-card" data-action="progress">
-                    <div class="action-icon">📈</div>
-                    <h3>View Progress</h3>
-                    <p>Analyze your learning journey and achievements</p>
-                </button>
+                    <p>Master concepts with spaced repetition</p>
+                </div>
+                <div class="action-card" data-action="notes">
+                    <div class="action-icon">📝</div>
+                    <h3>Generate Notes</h3>
+                    <p>Create AI-powered study notes from your content</p>
+                </div>
             </div>
 
             <div class="dashboard-bottom">
                 <div class="recent-activity-card">
-                    <h3>Recent Activity</h3>
-                    <div id="recent-activity-list" class="activity-list">
+                    <h3>📋 Recent Activity</h3>
+                    <div class="activity-list" id="activity-list">
                         <div class="activity-item">
-                            <span class="activity-icon">🎯</span>
-                            <div class="activity-content">
-                                <p class="activity-text">Get started by uploading your first study material!</p>
-                                <p class="activity-time">Just now</p>
+                            <div class="activity-icon">🎉</div>
+                            <div>
+                                <div class="activity-text">Get started by uploading study materials!</div>
+                                <div class="activity-time">Just now</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="achievements-card">
-                    <h3>Latest Badges</h3>
-                    <div id="latest-badges" class="badges-preview">
+                    <h3>🏆 Latest Badges</h3>
+                    <div class="badges-preview" id="latest-badges">
                         <div class="badge-placeholder">
-                            <span>🏆</span>
+                            <span>🏅</span>
                             <p>Complete activities to earn badges!</p>
                         </div>
                     </div>
@@ -207,21 +235,26 @@
             </div>
         </section>
 
+        <!-- Upload Section -->
         <section id="upload-section" class="app-section">
             <div class="section-header">
                 <div>
-                    <h2>Upload Study Content</h2>
-                    <p class="section-subtitle">Add PDFs or paste text to generate learning materials</p>
+                    <h2>📤 Upload Study Materials</h2>
+                    <p class="section-subtitle">Upload files or paste text to generate learning content</p>
                 </div>
             </div>
 
             <div class="upload-container">
                 <div class="upload-area" id="upload-area">
                     <div class="upload-icon">📁</div>
-                    <h3>Drag &amp; Drop PDF Here</h3>
-                    <p>or click to browse files</p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <h3>Drag & Drop Files Here</h3>
+                    <p>Supported: PDF, Images (PNG, JPG), Text files (TXT), Word documents (DOCX), EPUB</p>
                     <button class="btn btn-primary" id="browse-btn">Browse Files</button>
+                    <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt,.docx,.epub" style="display: none;">
+                    <div id="file-preview" class="file-preview hidden" style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <p id="file-name" style="margin: 0; font-weight: 600;"></p>
+                        <p id="file-size" style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-gray);"></p>
+                    </div>
                 </div>
 
                 <div class="divider">
@@ -229,35 +262,31 @@
                 </div>
 
                 <div class="text-input-area">
-                    <label for="content-text">Paste Your Study Notes</label>
-                    <textarea id="content-text" placeholder="Paste your study materials here..." rows="8"></textarea>
+                    <label for="content-text">Paste Your Text Content</label>
+                    <textarea id="content-text" rows="8" placeholder="Paste your study material here..." style="width: 100%; padding: 16px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical;"></textarea>
                 </div>
 
                 <div class="upload-options">
                     <div class="form-group">
-                        <label for="subject-select">Subject/Topic</label>
+                        <label for="subject-select">Subject</label>
                         <select id="subject-select">
-                            <option value="">Select a subject</option>
-                            <option value="mathematics">Mathematics</option>
-                            <option value="physics">Physics</option>
-                            <option value="chemistry">Chemistry</option>
-                            <option value="biology">Biology</option>
-                            <option value="computer-science">Computer Science</option>
-                            <option value="history">History</option>
-                            <option value="literature">Literature</option>
-                            <option value="other">Other</option>
+                            <option value="">Select Subject</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="History">History</option>
+                            <option value="Literature">Literature</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
-
                     <div class="form-group">
-                        <label for="difficulty-select">Difficulty Level</label>
+                        <label for="difficulty-select">Difficulty</label>
                         <select id="difficulty-select">
                             <option value="easy">Easy</option>
-                            <option value="medium" selected>Medium</option>
+                            <option value="medium">Medium</option>
                             <option value="hard">Hard</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="question-count">Number of Questions</label>
                         <input type="number" id="question-count" value="5" min="1" max="20">
@@ -266,36 +295,78 @@
 
                 <div class="generate-options">
                     <button class="btn btn-primary" id="generate-quiz-btn">
-                        <span>📝</span> Generate Quiz
+                        <span>🎯</span> Generate Quiz
                     </button>
                     <button class="btn btn-secondary" id="generate-flashcards-btn">
                         <span>🎴</span> Generate Flashcards
                     </button>
-                    <button class="btn btn-accent" id="generate-both-btn">
-                        <span>✨</span> Generate Both
+                    <button class="btn btn-success" id="generate-notes-btn">
+                        <span>📝</span> Generate Notes
+                    </button>
+                    <button class="btn btn-accent" id="generate-summary-btn">
+                        <span>📄</span> Generate Summary
                     </button>
                 </div>
             </div>
         </section>
 
+        <!-- Notes Section (NEW) -->
+        <section id="notes-section" class="app-section">
+            <div class="section-header">
+                <div>
+                    <h2>📝 Study Notes</h2>
+                    <p class="section-subtitle">AI-generated comprehensive study notes</p>
+                </div>
+            </div>
+            <div id="notes-container" class="content-container">
+                <div class="empty-state">
+                    <div style="font-size: 64px; margin-bottom: 16px;">📝</div>
+                    <h3>No Notes Yet</h3>
+                    <p>Upload content and click "Generate Notes" to create comprehensive study notes</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Q&A Section (NEW) -->
+        <section id="qa-section" class="app-section">
+            <div class="section-header">
+                <div>
+                    <h2>❓ Q&A Assistant</h2>
+                    <p class="section-subtitle">Ask questions about your uploaded content</p>
+                </div>
+            </div>
+            <div id="qa-container" class="content-container">
+                <div class="qa-input-area">
+                    <textarea id="qa-question" rows="3" placeholder="Ask a question about your uploaded content..." style="width: 100%; padding: 16px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical;"></textarea>
+                    <button class="btn btn-primary" id="ask-question-btn" style="margin-top: 12px; width: 100%;">
+                        <span>❓</span> Ask Question
+                    </button>
+                </div>
+                <div id="qa-history" class="qa-history" style="margin-top: 32px;">
+                    <div class="empty-state">
+                        <div style="font-size: 64px; margin-bottom: 16px;">💬</div>
+                        <h3>No Questions Yet</h3>
+                        <p>Upload content and ask questions to get AI-powered answers</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Section (Enhanced) -->
         <section id="quiz-section" class="app-section">
             <div id="quiz-start" class="quiz-view active">
                 <div class="quiz-start-card">
-                    <div class="quiz-icon">📝</div>
-                    <h2>Ready to Test Your Knowledge?</h2>
-                    <p>Answer questions and earn XP to level up!</p>
+                    <div class="quiz-icon">🎯</div>
+                    <h2>Ready for a Quiz?</h2>
+                    <p>Test your knowledge and earn XP!</p>
                     <div class="quiz-options">
                         <label class="checkbox-option">
                             <input type="checkbox" id="enable-timer">
-                            <span>Enable Timer</span>
-                        </label>
-                        <label class="checkbox-option">
-                            <input type="checkbox" id="enable-voice" checked>
-                            <span>Enable Voice Features</span>
+                            Enable Timer (5 minutes)
                         </label>
                     </div>
-                    <button class="btn btn-primary btn-large" id="start-quiz-btn">Start Quiz</button>
-                    <button class="btn btn-secondary" id="use-sample-quiz-btn">Try Sample Quiz</button>
+                    <button class="btn btn-primary btn-large btn-block" id="start-quiz-btn">Start Quiz</button>
+                    <button class="btn btn-ghost btn-block" id="use-sample-quiz-btn">Use Sample Quiz</button>
                 </div>
             </div>
 
@@ -305,8 +376,8 @@
                         <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
                     </div>
                     <div class="quiz-info">
-                        <span id="question-counter">Question 1 of 5</span>
-                        <span id="quiz-timer" class="quiz-timer hidden">5:00</span>
+                        <span id="quiz-question-number">Question 1 of 5</span>
+                        <span class="quiz-timer hidden" id="quiz-timer">⏱️ 5:00</span>
                     </div>
                 </div>
 
@@ -315,36 +386,30 @@
                         <div class="question-header">
                             <h3 id="question-text">Loading question...</h3>
                             <div class="question-actions">
-                                <button class="icon-btn" id="speak-question-btn" title="Read question aloud">
-                                    <span>🔊</span>
-                                </button>
-                                <button class="icon-btn" id="voice-answer-btn" title="Answer with voice">
-                                    <span>🎤</span>
-                                </button>
+                                <button class="icon-btn" id="speak-question-btn" title="Read Question">🔊</button>
+                                <button class="icon-btn" id="voice-answer-btn" title="Voice Answer">🎤</button>
+                                <button class="icon-btn" id="hint-btn" title="Get Hint">💡</button>
                             </div>
                         </div>
-
                         <div class="options-container" id="options-container">
-                            </div>
-
-                        <div class="quiz-controls">
-                            <button class="btn btn-ghost" id="hint-btn">
-                                <span>💡</span> Need Help?
-                            </button>
-                            <div class="quiz-nav-buttons">
-                                <button class="btn btn-secondary" id="skip-btn">Skip</button>
-                                <button class="btn btn-primary" id="submit-answer-btn" disabled>Submit</button>
-                            </div>
+                            <!-- Options will be inserted here -->
                         </div>
                     </div>
 
-                    <div id="explanation-card" class="explanation-card hidden">
+                    <div class="explanation-card hidden" id="explanation-card">
                         <div class="explanation-header">
-                            <span id="result-icon">✅</span>
-                            <h4 id="result-text">Correct!</h4>
+                            <span id="explanation-icon">✅</span>
+                            <h4 id="explanation-title">Correct!</h4>
                         </div>
-                        <p id="explanation-text"></p>
+                        <p id="explanation-text">Explanation text here...</p>
                         <button class="btn btn-primary" id="next-question-btn">Next Question</button>
+                    </div>
+
+                    <div class="quiz-controls">
+                        <button class="btn btn-ghost" id="skip-btn">Skip Question</button>
+                        <div class="quiz-nav-buttons">
+                            <button class="btn btn-primary" id="submit-answer-btn">Submit Answer</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -356,57 +421,51 @@
                     <h2 id="results-title">Quiz Complete!</h2>
                     <div class="results-score">
                         <div class="score-circle">
-                            <span id="score-percentage">0%</span>
+                            <div id="score-percentage">85%</div>
                         </div>
-                        <p id="score-text">0 out of 0 correct</p>
+                        <div id="score-text">Great job!</div>
                     </div>
                     <div class="results-stats">
                         <div class="result-stat">
-                            <span class="stat-label">Time Taken</span>
-                            <span class="stat-value" id="time-taken">0:00</span>
+                            <div class="stat-label">Correct</div>
+                            <div class="stat-value" id="correct-answers">0</div>
                         </div>
                         <div class="result-stat">
-                            <span class="stat-label">XP Earned</span>
-                            <span class="stat-value" id="xp-earned">+0 XP</span>
+                            <div class="stat-label">Time Taken</div>
+                            <div class="stat-value" id="time-taken">0s</div>
                         </div>
                         <div class="result-stat">
-                            <span class="stat-label">Accuracy</span>
-                            <span class="stat-value" id="accuracy">0%</span>
+                            <div class="stat-label">XP Earned</div>
+                            <div class="stat-value" id="xp-earned">0</div>
                         </div>
                     </div>
-                    <div id="badges-earned" class="badges-earned hidden"></div>
+                    <div class="badges-earned hidden" id="badges-earned"></div>
                     <div class="results-actions">
-                        <button class="btn btn-primary" id="retake-quiz-btn">Take Another Quiz</button>
-                        <button class="btn btn-secondary" id="review-answers-btn">Review Answers</button>
-                        <button class="btn btn-ghost" id="back-to-dashboard-btn">Back to Dashboard</button>
+                        <button class="btn btn-primary btn-block" id="retake-quiz-btn">Try Again</button>
+                        <button class="btn btn-ghost btn-block" id="back-to-dashboard-btn">Back to Dashboard</button>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Flashcards Section -->
         <section id="flashcards-section" class="app-section">
             <div id="flashcards-start" class="flashcards-view active">
                 <div class="flashcards-start-card">
                     <div class="flashcard-icon">🎴</div>
                     <h2>Review Flashcards</h2>
                     <p>Master your subjects with spaced repetition</p>
-                    <button class="btn btn-primary btn-large" id="start-flashcards-btn">Start Review</button>
-                    <button class="btn btn-secondary" id="use-sample-flashcards-btn">Try Sample Flashcards</button>
+                    <button class="btn btn-primary btn-large btn-block" id="start-flashcards-btn">Start Review</button>
+                    <button class="btn btn-ghost btn-block" id="use-sample-flashcards-btn">Use Sample Flashcards</button>
                 </div>
             </div>
 
             <div id="flashcards-studying" class="flashcards-view">
                 <div class="flashcards-header">
-                    <div class="flashcard-counter">
-                        <span id="card-counter">Card 1 of 10</span>
-                    </div>
+                    <div class="flashcard-counter" id="flashcard-counter">Card 1 of 10</div>
                     <div class="flashcard-actions">
-                        <button class="icon-btn" id="shuffle-cards-btn" title="Shuffle">
-                            <span>🔀</span>
-                        </button>
-                        <button class="icon-btn" id="speak-card-btn" title="Read aloud">
-                            <span>🔊</span>
-                        </button>
+                        <button class="icon-btn" id="speak-card-btn" title="Read Card">🔊</button>
+                        <button class="icon-btn" id="shuffle-cards-btn" title="Shuffle">🔀</button>
                     </div>
                 </div>
 
@@ -415,16 +474,12 @@
                         <div class="flashcard-inner">
                             <div class="flashcard-front">
                                 <div class="flashcard-label">Front</div>
-                                <div class="flashcard-content" id="flashcard-front-content">
-                                    Loading...
-                                </div>
-                                <div class="flashcard-hint">Click or press SPACE to flip</div>
+                                <div class="flashcard-content" id="flashcard-front-content">Click to flip</div>
+                                <div class="flashcard-hint">Click or tap to flip</div>
                             </div>
                             <div class="flashcard-back">
                                 <div class="flashcard-label">Back</div>
-                                <div class="flashcard-content" id="flashcard-back-content">
-                                    Definition
-                                </div>
+                                <div class="flashcard-content" id="flashcard-back-content">Answer</div>
                                 <div class="flashcard-category" id="flashcard-category">Category</div>
                             </div>
                         </div>
@@ -432,29 +487,23 @@
                 </div>
 
                 <div class="flashcard-controls">
-                    <button class="btn btn-danger" id="dont-know-btn">
-                        <span>❌</span> Don't Know
-                    </button>
-                    <button class="btn btn-ghost" id="mark-review-btn">
-                        <span>⭐</span> Mark for Review
-                    </button>
-                    <button class="btn btn-success" id="know-btn">
-                        <span>✅</span> Got It!
-                    </button>
+                    <button class="btn btn-danger" id="dont-know-btn">❌ Don't Know</button>
+                    <button class="btn btn-ghost" id="mark-review-btn">⭐ Mark for Review</button>
+                    <button class="btn btn-success" id="know-btn">✅ Know It</button>
                 </div>
 
                 <div class="flashcard-progress">
                     <div class="progress-item">
-                        <span class="progress-label">Reviewed</span>
-                        <span class="progress-value" id="cards-reviewed">0</span>
+                        <div class="progress-label">Known</div>
+                        <div class="progress-value" id="known-count">0</div>
                     </div>
                     <div class="progress-item">
-                        <span class="progress-label">Remaining</span>
-                        <span class="progress-value" id="cards-remaining">0</span>
+                        <div class="progress-label">Marked</div>
+                        <div class="progress-value" id="marked-count">0</div>
                     </div>
                     <div class="progress-item">
-                        <span class="progress-label">Marked</span>
-                        <span class="progress-value" id="cards-marked">0</span>
+                        <div class="progress-label">Remaining</div>
+                        <div class="progress-value" id="remaining-count">0</div>
                     </div>
                 </div>
             </div>
@@ -462,135 +511,141 @@
             <div id="flashcards-complete" class="flashcards-view">
                 <div class="flashcards-complete-card">
                     <div class="complete-icon">🎉</div>
-                    <h2>Review Complete!</h2>
-                    <p>Great job! You've reviewed all flashcards.</p>
+                    <h2>Great job! You've reviewed all flashcards.</h2>
                     <div class="complete-stats">
                         <div class="complete-stat">
-                            <span class="stat-label">Cards Reviewed</span>
-                            <span class="stat-value" id="total-reviewed">0</span>
+                            <div class="stat-label">Cards Reviewed</div>
+                            <div class="stat-value" id="total-reviewed">0</div>
                         </div>
                         <div class="complete-stat">
-                            <span class="stat-label">XP Earned</span>
-                            <span class="stat-value" id="flashcard-xp-earned">+0 XP</span>
+                            <div class="stat-label">Known</div>
+                            <div class="stat-value" id="final-known-count">0</div>
                         </div>
                     </div>
                     <div class="complete-actions">
-                        <button class="btn btn-primary" id="review-again-btn">Review Again</button>
-                        <button class="btn btn-secondary" id="review-marked-btn">Review Marked Cards</button>
-                        <button class="btn btn-ghost" id="flashcards-dashboard-btn">Back to Dashboard</button>
+                        <button class="btn btn-primary btn-block" id="review-again-btn">Review Again</button>
+                        <button class="btn btn-secondary btn-block" id="review-marked-btn">Review Marked Cards</button>
+                        <button class="btn btn-ghost btn-block" id="flashcards-dashboard-btn">Back to Dashboard</button>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Progress Section -->
         <section id="progress-section" class="app-section">
             <div class="section-header">
                 <div>
-                    <h2>Your Progress</h2>
-                    <p class="section-subtitle">Track your learning journey and achievements</p>
+                    <h2>📈 Your Progress</h2>
+                    <p class="section-subtitle">Track your learning journey</p>
                 </div>
-            </div>
-
-            <div class="progress-grid">
-                <div class="chart-card">
-                    <h3>Weekly Study Time</h3>
-                    <canvas id="study-time-chart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Performance by Subject</h3>
-                    <canvas id="performance-chart"></canvas>
-                </div>
-            </div>
-
-            <div class="streak-calendar-card">
-                <h3>Study Streak Calendar</h3>
-                <div id="streak-calendar" class="streak-calendar"></div>
             </div>
 
             <div class="badges-section">
-                <h3>Achievements &amp; Badges</h3>
-                <div id="all-badges" class="badges-grid"></div>
+                <h3>🏆 Achievements</h3>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges will be inserted here -->
+                </div>
             </div>
 
-            <div class="history-card">
-                <h3>Recent Study Sessions</h3>
-                <div id="study-history" class="history-list"></div>
+            <div class="history-card" style="margin-top: 32px;">
+                <h3>📊 Quiz History</h3>
+                <div class="history-list" id="history-list">
+                    <p style="text-align: center; color: var(--text-gray); padding: 40px;">
+                        No study sessions yet. Start a quiz to see your history!
+                    </p>
+                </div>
             </div>
         </section>
 
+        <!-- Profile Section -->
         <section id="profile-section" class="app-section">
+            <div class="section-header">
+                <div>
+                    <h2>👤 Your Profile</h2>
+                    <p class="section-subtitle">Manage your account and preferences</p>
+                </div>
+            </div>
+
             <div class="profile-header">
                 <div class="profile-avatar">
-                    <span id="profile-avatar-text">U</span>
-                    <div class="level-badge" id="profile-level-badge">1</div>
+                    <span style="font-size: 64px;">👤</span>
                 </div>
                 <div class="profile-info">
-                    <h2 id="profile-name">User</h2>
-                    <p id="profile-title" class="profile-title">Beginner</p>
-                    <div class="xp-progress">
-                        <div class="xp-bar">
-                            <div class="xp-fill" id="profile-xp-fill"></div>
-                        </div>
-                        <span class="xp-text" id="profile-xp-text">0 / 1000 XP</span>
+                    <h2 id="profile-name">Guest</h2>
+                    <p id="profile-email" style="color: var(--text-gray); margin: 4px 0;">guest@studyhub.com</p>
+                    <div class="profile-level">
+                        <span id="profile-level-badge" class="badge">Level 1 - Beginner</span>
                     </div>
                 </div>
             </div>
 
             <div class="profile-stats-grid">
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">⏱️</div>
-                    <div class="profile-stat-value" id="profile-study-time">0h</div>
-                    <div class="profile-stat-label">Total Study Time</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--gradient-1);">💎</div>
+                    <div>
+                        <div class="stat-label">Total XP</div>
+                        <div class="stat-value" id="profile-xp">0</div>
+                    </div>
                 </div>
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">📝</div>
-                    <div class="profile-stat-value" id="profile-quizzes">0</div>
-                    <div class="profile-stat-label">Quizzes Taken</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--gradient-2);">✅</div>
+                    <div>
+                        <div class="stat-label">Quizzes</div>
+                        <div class="stat-value" id="profile-quizzes">0</div>
+                    </div>
                 </div>
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">🎴</div>
-                    <div class="profile-stat-value" id="profile-flashcards">0</div>
-                    <div class="profile-stat-label">Flashcards Reviewed</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--gradient-3);">🎴</div>
+                    <div>
+                        <div class="stat-label">Flashcards</div>
+                        <div class="stat-value" id="profile-flashcards">0</div>
+                    </div>
                 </div>
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">🏆</div>
-                    <div class="profile-stat-value" id="profile-badges">0</div>
-                    <div class="profile-stat-label">Badges Earned</div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--gradient-4);">⏱️</div>
+                    <div>
+                        <div class="stat-label">Study Time</div>
+                        <div class="stat-value" id="profile-study-time">0s</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="profile-achievements">
-                <h3>Your Achievements</h3>
-                <div id="profile-badges-display" class="profile-badges-grid"></div>
+            <div class="profile-badges">
+                <h3>🏆 Your Badges</h3>
+                <div class="badges-grid" id="profile-badges-grid">
+                    <p style="text-align: center; color: var(--text-gray); padding: 40px;">
+                        Complete activities to earn badges!
+                    </p>
+                </div>
             </div>
 
-            <div class="profile-settings">
-                <h3>Settings</h3>
+            <div class="settings-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-top: 32px;">
+                <h3 style="margin-bottom: 20px;">⚙️ Settings</h3>
                 <div class="settings-list">
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <span class="setting-label">Voice Features</span>
-                            <span class="setting-description">Enable text-to-speech and voice input</span>
+                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">🔊 Voice Features</div>
+                            <div style="font-size: 14px; color: var(--text-gray);">Enable text-to-speech and voice recognition</div>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="voice-toggle" checked>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <span class="setting-label">Sound Effects</span>
-                            <span class="setting-description">Play sounds for achievements</span>
+                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">🔔 Sound Effects</div>
+                            <div style="font-size: 14px; color: var(--text-gray);">Play sounds for achievements and actions</div>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="sound-toggle" checked>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <span class="setting-label">Daily Reminders</span>
-                            <span class="setting-description">Get notified to maintain your streak</span>
+                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">⏰ Study Reminders</div>
+                            <div style="font-size: 14px; color: var(--text-gray);">Get daily study reminders</div>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="reminder-toggle">
@@ -598,47 +653,45 @@
                         </label>
                     </div>
                 </div>
-                <button class="btn btn-danger" id="logout-btn">Logout</button>
+                <button class="btn btn-danger btn-block" id="logout-btn" style="margin-top: 24px;">
+                    <span>🚪</span> Logout
+                </button>
             </div>
         </section>
     </div>
 
-    <div id="toast-container"></div>
-
+    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="loading-spinner"></div>
         <p id="loading-text">Processing...</p>
     </div>
 
+    <!-- Modal -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal" id="modal">
             <div class="modal-header">
                 <h3 id="modal-title">Modal Title</h3>
-                <button class="modal-close" id="modal-close">&times;</button>
+                <button class="modal-close" id="modal-close">✕</button>
             </div>
             <div class="modal-body" id="modal-body">
-                Modal content
+                Modal content here...
             </div>
-            <div class="modal-footer" id="modal-footer">
+            <div class="modal-footer">
                 <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
                 <button class="btn btn-primary" id="modal-confirm">Confirm</button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDK Scripts (Add these) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
-<!-- Your App Scripts (Already Present) -->
-<script src="config.js"></script>
-<script src="state.js"></script>
-<script src="utils.js"></script>
-<script src="api.js"></script>
-<script src="ui.js"></script>
-<script src="main.js"></script>
-
+    <!-- JavaScript Files (Load in correct order) -->
+    <script src="config.js"></script>
+    <script src="state.js"></script>
+    <script src="utils.js"></script>
+    <script src="api.js"></script>
+    <script src="ui.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

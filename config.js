@@ -2,7 +2,7 @@
 // CONFIGURATION & PLACEHOLDERS
 // ====================================
 
-// Firebase Configuration - REPLACE WITH YOUR ACTUAL CREDENTIALS
+// Firebase Configuration - Using your provided credentials
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBoUtquSv996DJgXwotKOhakl6Yc9zfIrc",
     authDomain: "smart-study-a1721.firebaseapp.com",
@@ -12,7 +12,7 @@ const FIREBASE_CONFIG = {
     appId: "1:116901944117:web:9c9de8cebb6ff5e133ca7c"
 };
 
-// Gemini API Configuration - REPLACE WITH YOUR ACTUAL API KEY
+// Gemini API Configuration - Using your provided key
 const GEMINI_API_KEY = "AIzaSyD5tQg_ls50hZGVX24zGqGN0nDbHM1xsNE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
@@ -91,6 +91,34 @@ const SAMPLE_BADGES = [
         icon: "🦉",
         xpReward: 200,
         color: "#6366f1",
+        unlocked: false
+    },
+    // NEW BADGES
+    {
+        id: "first_notes",
+        name: "Note Taker",
+        description: "Generate your first study notes",
+        icon: "📝",
+        xpReward: 150,
+        color: "#10b981",
+        unlocked: false
+    },
+    {
+        id: "curious_mind",
+        name: "Curious Mind",
+        description: "Ask 10 questions in Q&A",
+        icon: "❓",
+        xpReward: 250,
+        color: "#f59e0b",
+        unlocked: false
+    },
+    {
+        id: "file_master",
+        name: "File Master",
+        description: "Upload files of 3 different types",
+        icon: "📁",
+        xpReward: 200,
+        color: "#8b5cf6",
         unlocked: false
     }
 ];
@@ -171,4 +199,3 @@ const XP_LEVELS = [
     { level: 7, xpRequired: 35000, title: "Master" },
     { level: 8, xpRequired: 50000, title: "Legend" }
 ];
-

@@ -4,50 +4,48 @@
 
 /**
  * Navigates to a specific section within the main app page.
- * @param {string} sectionId The ID of the section to show (e.g., "dashboard", "quiz").
+ * @param {string} sectionId The ID of the section to show.
  */
 function navigateToSection(sectionId) {
     // Hide all sections
     document.querySelectorAll('.app-section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Show selected section
     const section = document.getElementById(`${sectionId}-section`);
     if (section) {
         section.classList.add('active');
     }
-    
+
     // Update nav items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    
     const navItem = document.querySelector(`[data-section="${sectionId}"]`);
     if (navItem) {
         navItem.classList.add('active');
     }
-    
+
     // Close mobile menu
     document.querySelector('.nav-menu')?.classList.remove('active');
-    
+
     // Specific updates when navigating to a section
     if (sectionId === 'progress') {
-        updateProgressCharts();
+        updateProgressSection();
     } else if (sectionId === 'profile') {
         updateProfileStats();
     }
 }
 
 /**
- * Shows a top-level page (e.g., "auth-page" or "app-page").
+ * Shows a top-level page.
  * @param {string} pageId The ID of the page to show.
  */
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
     });
-    
     const page = document.getElementById(`${pageId}-page`);
     if (page) {
         page.classList.add('active');
@@ -56,7 +54,7 @@ function showPage(pageId) {
 
 /**
  * Manages the visibility of views within the Quiz section.
- * @param {string} viewId The view to show (e.g., "quiz-start", "quiz-taking").
+ * @param {string} viewId The view to show.
  */
 function showQuizView(viewId) {
     document.querySelectorAll('.quiz-view').forEach(view => view.classList.remove('active'));
@@ -68,7 +66,7 @@ function showQuizView(viewId) {
 
 /**
  * Manages the visibility of views within the Flashcards section.
- * @param {string} viewId The view to show (e.g., "flashcards-start", "flashcards-studying").
+ * @param {string} viewId The view to show.
  */
 function showFlashcardView(viewId) {
     document.querySelectorAll('.flashcards-view').forEach(view => view.classList.remove('active'));
@@ -86,64 +84,59 @@ function showFlashcardView(viewId) {
  * Updates all statistics and text on the dashboard.
  */
 function updateDashboardStats() {
-    console.log("updateDashboardStats: Starting..."); // LOG
-    try {
-        document.getElementById('welcome-message').textContent = `Welcome back, ${appState.userProfile.name}!`;
-        document.getElementById('streak-count').textContent = appState.userProfile.streak;
-        document.getElementById('total-study-time').textContent = formatTime(appState.userProfile.studyTime); // utils.js
-        document.getElementById('quizzes-completed').textContent = appState.userProfile.quizzesCompleted;
-        document.getElementById('current-level').textContent = appState.userProfile.level;
-        document.getElementById('total-xp').textContent = appState.userProfile.xp;
-        
-        // Update latest badges (rest of function is the same)
-        const latestBadgesDiv = document.getElementById('latest-badges');
-        const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id)); // config.js state.js
-        
+    document.getElementById('welcome-message').textContent = `Welcome back, ${appState.userProfile.name}!`;
+    document.getElementById('streak-count').textContent = appState.userProfile.streak;
+    document.getElementById('total-study-time').textContent = formatTime(appState.userProfile.studyTime);
+    document.getElementById('quizzes-completed').textContent = appState.userProfile.quizzesCompleted;
+    document.getElementById('current-level').textContent = appState.userProfile.level;
+    document.getElementById('total-xp').textContent = appState.userProfile.xp;
+
+    // Update latest badges
+    const latestBadgesDiv = document.getElementById('latest-badges');
+    const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id));
+
     if (earnedBadges.length > 0) {
         latestBadgesDiv.innerHTML = earnedBadges.slice(-3).map(badge => `
-            <div class="badge-card" style="border-color: ${badge.color}">
-                <div class="badge-icon">${badge.icon}</div>
-                <div class="badge-name">${badge.name}</div>
+            <div class="badge-mini" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <div style="font-size: 32px; margin-bottom: 8px;">${badge.icon}</div>
+                <div style="font-size: 13px; font-weight: 600;">${badge.name}</div>
             </div>
         `).join('');
     } else {
         latestBadgesDiv.innerHTML = `
             <div class="badge-placeholder">
-                <span>🏆</span>
+                <span>🏅</span>
                 <p>Complete activities to earn badges!</p>
-            </div>`;
+            </div>
+        `;
     }
 }
 
 /**
- * Adds an item to the "Recent Activity" list on the dashboard.
+ * Adds an activity item to the recent activity list.
  * @param {string} icon The emoji icon for the activity.
- * @param {string} text The description of the activity.
- * @param {string} time The time string (e.g., "Just now").
+ * @param {string} text The activity description.
+ * @param {string} time The time text (e.g., "Just now").
  */
 function addRecentActivity(icon, text, time) {
-    const activityList = document.getElementById('recent-activity-list');
+    const activityList = document.getElementById('activity-list');
     if (!activityList) return;
 
     const activityItem = document.createElement('div');
     activityItem.className = 'activity-item';
     activityItem.innerHTML = `
-        <span class="activity-icon">${icon}</span>
-        <div class="activity-content">
-            <p class="activity-text">${text}</p>
-            <p class="activity-time">${time}</p>
+        <div class="activity-icon">${icon}</div>
+        <div>
+            <div class="activity-text">${text}</div>
+            <div class="activity-time">${time}</div>
         </div>
     `;
-    
-    // Insert at the top
-    if (activityList.firstChild) {
-        activityList.insertBefore(activityItem, activityList.firstChild);
-    } else {
-        activityList.appendChild(activityItem);
-    }
-    
-    // Keep list to a max of 5
-    while (activityList.children.length > 5) {
+
+    // Insert at the beginning
+    activityList.insertBefore(activityItem, activityList.firstChild);
+
+    // Keep only the last 10 activities
+    while (activityList.children.length > 10) {
         activityList.removeChild(activityList.lastChild);
     }
 }
@@ -153,186 +146,163 @@ function addRecentActivity(icon, text, time) {
 // ====================================
 
 /**
- * Starts the quiz timer UI.
- * @param {number} duration The quiz duration in seconds.
- * @param {function} onTimerEnd Callback function when the timer reaches zero.
- * @returns {number} The interval timer ID.
- */
-function startQuizTimerUI(duration, onTimerEnd) {
-    let timeLeft = duration;
-    const timerElement = document.getElementById('quiz-timer');
-    timerElement.classList.remove('hidden');
-    
-    const updateTimer = () => {
-        timeLeft--;
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        if (timeLeft <= 0) {
-            clearInterval(quizTimer);
-            onTimerEnd();
-        }
-    };
-
-    updateTimer(); // Call once immediately
-    const quizTimer = setInterval(updateTimer, 1000);
-    return quizTimer;
-}
-
-/**
- * Displays the current quiz question and options.
+ * Displays the current question in the quiz.
  */
 function displayQuestion() {
     const quiz = appState.currentQuiz;
-    if (!quiz) return;
-    
     const question = quiz.questions[quiz.currentQuestion];
-    
-    document.getElementById('question-text').textContent = question.question;
-    document.getElementById('question-counter').textContent = 
-        `Question ${quiz.currentQuestion + 1} of ${quiz.questions.length}`;
-    
+
+    // Update progress bar
     const progress = ((quiz.currentQuestion + 1) / quiz.questions.length) * 100;
     document.getElementById('quiz-progress-fill').style.width = `${progress}%`;
-    
+    document.getElementById('quiz-question-number').textContent = 
+        `Question ${quiz.currentQuestion + 1} of ${quiz.questions.length}`;
+
+    // Display question
+    document.getElementById('question-text').textContent = question.question;
+
+    // Display options
     const optionsContainer = document.getElementById('options-container');
-    optionsContainer.innerHTML = question.options.map((option, index) => `
-        <button class="option" data-index="${index}">
-            ${String.fromCharCode(65 + index)}) ${option}
-        </button>
-    `).join('');
-    
-    // Add event listeners to new options
-    document.querySelectorAll('.option').forEach(option => {
-        option.addEventListener('click', () => selectOption(option));
+    optionsContainer.innerHTML = '';
+    question.options.forEach((option, index) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option';
+        optionDiv.dataset.index = index;
+        optionDiv.textContent = option;
+        optionDiv.addEventListener('click', () => selectOption(optionDiv));
+        optionsContainer.appendChild(optionDiv);
     });
-    
-    document.getElementById('submit-answer-btn').disabled = true;
+
+    // Hide explanation card
     document.getElementById('explanation-card').classList.add('hidden');
-    
-    // Re-enable option buttons
-    optionsContainer.style.pointerEvents = 'auto';
-    document.querySelectorAll('.option').forEach(opt => {
-        opt.classList.remove('selected', 'correct', 'incorrect');
-        opt.style.pointerEvents = 'auto';
-    });
 }
 
 /**
- * Handles the UI change when an option is selected.
- * @param {HTMLElement} optionElement The selected option button element.
+ * Selects an option in the quiz.
+ * @param {HTMLElement} optionElement The option element that was clicked.
  */
 function selectOption(optionElement) {
+    // Remove previous selection
     document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+    // Add selection to clicked option
     optionElement.classList.add('selected');
-    document.getElementById('submit-answer-btn').disabled = false;
 }
 
 /**
- * Shows the explanation card after submitting an answer.
- * @param {boolean} isCorrect Whether the user's answer was correct.
+ * Shows the explanation for the current question.
+ * @param {boolean} isCorrect Whether the answer was correct.
  */
 function showExplanation(isCorrect) {
     const quiz = appState.currentQuiz;
     const question = quiz.questions[quiz.currentQuestion];
-    const selectedOption = document.querySelector('.option.selected');
-    const userAnswerIndex = selectedOption ? parseInt(selectedOption.dataset.index) : -1;
-    
-    // Disable all options
-    document.getElementById('options-container').style.pointerEvents = 'none';
-    
-    // Visual feedback
-    document.querySelectorAll('.option').forEach((opt, index) => {
+    const explanationCard = document.getElementById('explanation-card');
+
+    // Update UI based on correctness
+    const icon = document.getElementById('explanation-icon');
+    const title = document.getElementById('explanation-title');
+    const text = document.getElementById('explanation-text');
+
+    if (isCorrect) {
+        icon.textContent = '✅';
+        title.textContent = 'Correct!';
+        explanationCard.style.borderColor = 'var(--success)';
+    } else {
+        icon.textContent = '❌';
+        title.textContent = 'Not quite right';
+        explanationCard.style.borderColor = 'var(--danger)';
+    }
+
+    text.textContent = question.explanation;
+
+    // Highlight correct/incorrect options
+    const options = document.querySelectorAll('.option');
+    options.forEach((opt, index) => {
         if (index === question.correct) {
             opt.classList.add('correct');
-        } else if (index === userAnswerIndex && !isCorrect) {
+        } else if (opt.classList.contains('selected') && index !== question.correct) {
             opt.classList.add('incorrect');
         }
+        // Disable further clicks
+        opt.style.pointerEvents = 'none';
     });
-    
-    // Show explanation card
-    const explanationCard = document.getElementById('explanation-card');
-    const resultIcon = document.getElementById('result-icon');
-    const resultText = document.getElementById('result-text');
-    const explanationText = document.getElementById('explanation-text');
-    
-    if (isCorrect) {
-        resultIcon.textContent = '✅';
-        resultText.textContent = 'Correct!';
-        resultText.style.color = 'var(--success)';
-    } else {
-        resultIcon.textContent = '❌';
-        resultText.textContent = 'Incorrect';
-        resultText.style.color = 'var(--danger)';
-    }
-    
-    explanationText.textContent = question.explanation;
+
     explanationCard.classList.remove('hidden');
 }
 
 /**
- * Displays the final quiz results screen.
+ * Starts the quiz timer UI.
+ * @param {number} seconds The total seconds for the timer.
+ * @param {function} onComplete Callback when timer expires.
+ * @returns {number} The interval ID.
+ */
+function startQuizTimerUI(seconds, onComplete) {
+    const timerElement = document.getElementById('quiz-timer');
+    timerElement.classList.remove('hidden');
+
+    let remaining = seconds;
+
+    const updateTimer = () => {
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerElement.textContent = `⏱️ ${minutes}:${secs.toString().padStart(2, '0')}`;
+
+        if (remaining <= 0) {
+            clearInterval(interval);
+            onComplete();
+        }
+        remaining--;
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return interval;
+}
+
+/**
+ * Displays the quiz results.
  */
 function displayQuizResults() {
+    showQuizView('quiz-results');
+
     const quiz = appState.currentQuiz;
     const correctAnswers = quiz.answers.filter(a => a.correct).length;
     const totalQuestions = quiz.questions.length;
-    const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+    const percentage = Math.round((correctAnswers / totalQuestions) * 100) || 0;
     const timeTaken = Math.floor((Date.now() - quiz.startTime) / 1000);
-    
+
+    // Calculate XP earned
     let xpEarned = 50 + (correctAnswers * 10);
     if (percentage === 100) {
         xpEarned += 100;
     }
-    
-    // Show results view
-    showQuizView('quiz-results');
-    
+
+    // Update results display
+    document.getElementById('score-percentage').textContent = `${percentage}%`;
+    document.getElementById('correct-answers').textContent = correctAnswers;
+    document.getElementById('time-taken').textContent = formatTime(timeTaken);
+    document.getElementById('xp-earned').textContent = `+${xpEarned}`;
+
+    // Update results icon and text based on performance
     const resultsIcon = document.getElementById('results-icon');
     const resultsTitle = document.getElementById('results-title');
-    
-    if (percentage >= 80) {
-        resultsIcon.textContent = '🎉';
-        resultsTitle.textContent = 'Excellent Work!';
-        createConfetti();
-    } else if (percentage >= 60) {
-        resultsIcon.textContent = '😊';
-        resultsTitle.textContent = 'Good Job!';
-    } else {
-        resultsIcon.textContent = '💪';
-        resultsTitle.textContent = 'Keep Practicing!';
-    }
-    
-    document.getElementById('score-percentage').textContent = `${percentage}%`;
-    document.getElementById('score-text').textContent = `${correctAnswers} out of ${totalQuestions} correct`;
-    document.getElementById('time-taken').textContent = formatTime(timeTaken);
-    document.getElementById('xp-earned').textContent = `+${xpEarned} XP`;
-    document.getElementById('accuracy').textContent = `${percentage}%`;
-    
-    // Add to recent activity
-    addRecentActivity('📝', `Completed ${quiz.subject} quiz with ${percentage}%!`, 'Just now');
-}
+    const scoreText = document.getElementById('score-text');
 
-/**
- * Creates a confetti animation on the results screen.
- */
-function createConfetti() {
-    const confettiContainer = document.getElementById('results-confetti');
-    if (!confettiContainer) return;
-    
-    confettiContainer.innerHTML = '';
-    
-    for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'absolute';
-        confetti.style.width = '10px';
-        confetti.style.height = '10px';
-        confetti.style.backgroundColor = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'][Math.floor(Math.random() * 5)];
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.top = '-10px';
-        confetti.style.animation = `fall ${2 + Math.random() * 2}s linear forwards`;
-        confettiContainer.appendChild(confetti);
+    if (percentage === 100) {
+        resultsIcon.textContent = '🎉';
+        resultsTitle.textContent = 'Perfect Score!';
+        scoreText.textContent = 'Outstanding work!';
+    } else if (percentage >= 80) {
+        resultsIcon.textContent = '🌟';
+        resultsTitle.textContent = 'Excellent!';
+        scoreText.textContent = 'Great job!';
+    } else if (percentage >= 60) {
+        resultsIcon.textContent = '👍';
+        resultsTitle.textContent = 'Good Effort!';
+        scoreText.textContent = 'Keep practicing!';
+    } else {
+        resultsIcon.textContent = '📚';
+        resultsTitle.textContent = 'Keep Learning!';
+        scoreText.textContent = 'Review the material and try again.';
     }
 }
 
@@ -345,222 +315,75 @@ function createConfetti() {
  */
 function displayFlashcard() {
     const deck = appState.currentFlashcardDeck;
-    if (!deck || deck.cards.length === 0) return;
-
     const card = deck.cards[deck.currentCard];
-    
-    document.getElementById('card-counter').textContent = 
+
+    // Update counter
+    document.getElementById('flashcard-counter').textContent = 
         `Card ${deck.currentCard + 1} of ${deck.cards.length}`;
-    
+
+    // Update card content
     document.getElementById('flashcard-front-content').textContent = card.front;
     document.getElementById('flashcard-back-content').textContent = card.back;
-    document.getElementById('flashcard-category').textContent = card.category;
-    
-    const flashcard = document.getElementById('flashcard');
-    flashcard.classList.remove('flipped');
-    
+    document.getElementById('flashcard-category').textContent = card.category || 'General';
+
+    // Remove flipped state
+    document.getElementById('flashcard').classList.remove('flipped');
+
+    // Update progress
     updateFlashcardProgress();
 }
 
 /**
- * Updates the progress indicators (reviewed, remaining, marked) during flashcard study.
+ * Updates the flashcard progress counters.
  */
 function updateFlashcardProgress() {
     const deck = appState.currentFlashcardDeck;
-    if (!deck) return;
-    
-    document.getElementById('cards-reviewed').textContent = deck.currentCard;
-    document.getElementById('cards-remaining').textContent = deck.cards.length - deck.currentCard;
-    document.getElementById('cards-marked').textContent = deck.markedCards.length;
+    document.getElementById('known-count').textContent = deck.knownCards.length;
+    document.getElementById('marked-count').textContent = deck.markedCards.length;
+    document.getElementById('remaining-count').textContent = 
+        deck.cards.length - deck.currentCard - 1;
 }
 
 /**
- * Displays the flashcard review completion screen.
+ * Displays the flashcard completion screen.
  */
 function displayFlashcardResults() {
-    const deck = appState.currentFlashcardDeck;
-    if (!deck) return;
-    
-    const xpEarned = deck.cards.length * 10;
-    
     showFlashcardView('flashcards-complete');
-    
+
+    const deck = appState.currentFlashcardDeck;
     document.getElementById('total-reviewed').textContent = deck.cards.length;
-    document.getElementById('flashcard-xp-earned').textContent = `+${xpEarned} XP`;
-    
-    // Add to recent activity
-    addRecentActivity('🎴', `Reviewed ${deck.cards.length} ${deck.subject} flashcards.`, 'Just now');
+    document.getElementById('final-known-count').textContent = deck.knownCards.length;
 }
 
 // ====================================
-// PROGRESS & CHARTS UI
+// PROGRESS SECTION UI
 // ====================================
 
 /**
- * Updates all charts and lists on the Progress page.
+ * Updates the progress section with badges and history.
  */
-function updateProgressCharts() {
-    createStudyTimeChart();
-    createPerformanceChart();
-    createStreakCalendar();
-    displayAllBadges();
-    displayStudyHistory();
-}
-
-/**
- * Creates or updates the Weekly Study Time chart.
- */
-function createStudyTimeChart() {
-    const ctx = document.getElementById('study-time-chart');
-    if (!ctx) return;
-    
-    // Mock data for demo
-    const data = [45, 60, 30, 75, 90, 40, 55]; 
-    
-    if (window.studyTimeChart) {
-        window.studyTimeChart.data.datasets[0].data = data;
-        window.studyTimeChart.update();
-    } else {
-        window.studyTimeChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Study Time (minutes)',
-                    data: data,
-                    backgroundColor: '#6366f1',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: '#334155' }
-                    },
-                    x: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
-}
-
-/**
- * Creates or updates the Performance by Subject chart.
- */
-function createPerformanceChart() {
-    const ctx = document.getElementById('performance-chart');
-    if (!ctx) return;
-    
-    // Mock data for demo
-    const labels = ['Mathematics', 'Physics', 'Biology', 'Computer Science'];
-    const data = [30, 25, 20, 25];
-    
-    if (window.performanceChart) {
-        window.performanceChart.data.labels = labels;
-        window.performanceChart.data.datasets[0].data = data;
-        window.performanceChart.update();
-    } else {
-        window.performanceChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#10b981'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', padding: 15 }
-                    }
-                }
-            }
-        });
-    }
-}
-
-/**
- * Creates the 35-day streak calendar grid.
- */
-function createStreakCalendar() {
-    const calendar = document.getElementById('streak-calendar');
-    if (!calendar) return;
-    
-    calendar.innerHTML = '';
-    const today = new Date();
-    const days = 35; // 5 weeks
-    
-    for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day';
-        dayDiv.textContent = date.getDate();
-        
-        // Mock data: 70% chance of being active
-        if (Math.random() > 0.3) {
-            dayDiv.classList.add('active');
-        }
-        
-        if (i === 0) { // Today
-            dayDiv.classList.add('today');
-            if (appState.userProfile.streak > 0) {
-                 dayDiv.classList.add('active');
-            }
-        }
-        
-        dayDiv.title = date.toDateString();
-        calendar.appendChild(dayDiv);
-    }
-}
-
-/**
- * Displays all available badges and their locked/unlocked status.
- */
-function displayAllBadges() {
-    const badgesGrid = document.getElementById('all-badges');
-    if (!badgesGrid) return;
-    
+function updateProgressSection() {
+    // Update badges grid
+    const badgesGrid = document.getElementById('badges-grid');
     badgesGrid.innerHTML = SAMPLE_BADGES.map(badge => {
-        const unlocked = appState.userProfile.badges.includes(badge.id);
+        const isUnlocked = appState.userProfile.badges.includes(badge.id);
         return `
-        <div class="badge-card ${unlocked ? '' : 'locked'}" style="border-color: ${badge.color}">
-            <div class="badge-icon">${badge.icon}</div>
-            <div class="badge-name">${badge.name}</div>
-            <div class="badge-description">${badge.description}</div>
-            <div class="badge-xp">+${badge.xpReward} XP</div>
-        </div>
-    `}).join('');
-}
+            <div class="badge-card ${isUnlocked ? '' : 'locked'}">
+                <div class="badge-icon">${badge.icon}</div>
+                <div class="badge-name">${badge.name}</div>
+                <div class="badge-description">${badge.description}</div>
+                <div class="badge-xp">${isUnlocked ? 'Unlocked!' : `+${badge.xpReward} XP`}</div>
+            </div>
+        `;
+    }).join('');
 
-/**
- * Displays the user's recent study history (from quiz history).
- */
-function displayStudyHistory() {
-    const historyList = document.getElementById('study-history');
-    if (!historyList) return;
-    
+    // Update quiz history
+    const historyList = document.getElementById('history-list');
     if (appState.quizHistory.length === 0) {
-        historyList.innerHTML = '<p style="text-align: center; color: var(--text-gray);">No study sessions yet. Start a quiz to see your history!</p>';
+        historyList.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 40px;">No study sessions yet. Start a quiz to see your history!</p>';
         return;
     }
-    
+
     historyList.innerHTML = appState.quizHistory.slice(-10).reverse().map(session => `
         <div class="history-item">
             <div class="history-info">
@@ -573,62 +396,99 @@ function displayStudyHistory() {
 }
 
 // ====================================
-// PROFILE UI
+// PROFILE SECTION UI
 // ====================================
 
 /**
- * Updates all stats and info on the Profile page.
+ * Updates the profile section with user stats and badges.
  */
 function updateProfileStats() {
-    const profile = appState.userProfile;
-    
-    document.getElementById('profile-avatar-text').textContent = profile.name.charAt(0).toUpperCase();
-    document.getElementById('profile-level-badge').textContent = profile.level;
-    document.getElementById('profile-name').textContent = profile.name;
-    
-    const { title } = calculateLevel(profile.xp);
-    document.getElementById('profile-title').textContent = title;
-    
-    const currentLevelData = XP_LEVELS.find(l => l.level === profile.level) || XP_LEVELS[0];
-    const nextLevelData = XP_LEVELS.find(l => l.level === profile.level + 1);
-    
-    if (nextLevelData) {
-        const xpInCurrentLevel = profile.xp - currentLevelData.xpRequired;
-        const xpNeededForNextLevel = nextLevelData.xpRequired - currentLevelData.xpRequired;
-        const progress = Math.max(0, Math.min(100, (xpInCurrentLevel / xpNeededForNextLevel) * 100));
-        
-        document.getElementById('profile-xp-fill').style.width = `${progress}%`;
-        document.getElementById('profile-xp-text').textContent = 
-            `${profile.xp} / ${nextLevelData.xpRequired} XP`;
-    } else {
-        // Max level
-        document.getElementById('profile-xp-fill').style.width = '100%';
-        document.getElementById('profile-xp-text').textContent = `${profile.xp} XP (Max Level)`;
-    }
-    
-    document.getElementById('profile-study-time').textContent = formatTime(profile.studyTime);
-    document.getElementById('profile-quizzes').textContent = profile.quizzesCompleted;
-    document.getElementById('profile-flashcards').textContent = profile.flashcardsReviewed;
-    document.getElementById('profile-badges').textContent = profile.badges.length;
-    
-    // Update settings toggles
-    document.getElementById('voice-toggle').checked = profile.settings.voiceEnabled;
-    document.getElementById('sound-toggle').checked = profile.settings.soundEnabled;
-    document.getElementById('reminder-toggle').checked = profile.settings.remindersEnabled;
-    
-    // Display earned badges
-    const profileBadgesGrid = document.getElementById('profile-badges-display');
-    const earnedBadges = SAMPLE_BADGES.filter(b => profile.badges.includes(b.id));
-    
+    document.getElementById('profile-name').textContent = appState.userProfile.name;
+    document.getElementById('profile-email').textContent = appState.userProfile.email || 'guest@studyhub.com';
+
+    const { level, title } = calculateLevel(appState.userProfile.xp);
+    document.getElementById('profile-level-badge').textContent = `Level ${level} - ${title}`;
+
+    document.getElementById('profile-xp').textContent = appState.userProfile.xp;
+    document.getElementById('profile-quizzes').textContent = appState.userProfile.quizzesCompleted;
+    document.getElementById('profile-flashcards').textContent = appState.userProfile.flashcardsReviewed;
+    document.getElementById('profile-study-time').textContent = formatTime(appState.userProfile.studyTime);
+
+    // Update badges in profile
+    const profileBadgesGrid = document.getElementById('profile-badges-grid');
+    const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id));
+
     if (earnedBadges.length === 0) {
-        profileBadgesGrid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Complete activities to earn badges!</p>';
+        profileBadgesGrid.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 40px;">Complete activities to earn badges!</p>';
     } else {
         profileBadgesGrid.innerHTML = earnedBadges.map(badge => `
-            <div class="badge-card" style="border-color: ${badge.color}">
+            <div class="badge-card">
                 <div class="badge-icon">${badge.icon}</div>
                 <div class="badge-name">${badge.name}</div>
+                <div class="badge-description">${badge.description}</div>
+                <div class="badge-xp">Unlocked!</div>
             </div>
         `).join('');
     }
 }
 
+// ====================================
+// NEW: NOTES & Q&A UI
+// ====================================
+
+/**
+ * Displays generated notes in the notes section.
+ * @param {string} notes The generated notes content.
+ */
+function displayGeneratedNotes(notes) {
+    const notesContainer = document.getElementById('notes-container');
+    notesContainer.innerHTML = `
+        <div class="content-display" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; line-height: 1.8; max-width: 900px; margin: 0 auto;">
+            <div style="white-space: pre-wrap; font-size: 15px;">${notes.replace(/\n/g, '<br>')}</div>
+        </div>
+    `;
+}
+
+/**
+ * Displays generated summary in a modal.
+ * @param {string} summary The generated summary content.
+ */
+function displayGeneratedSummary(summary) {
+    const formattedSummary = `<div style="line-height: 1.8; white-space: pre-wrap;">${summary.replace(/\n/g, '<br>')}</div>`;
+    showModal('📄 Content Summary', formattedSummary);
+}
+
+/**
+ * Adds a Q&A exchange to the history.
+ * @param {string} question The user's question.
+ * @param {string} answer The AI's answer.
+ */
+function addQAToHistory(question, answer) {
+    const qaHistory = document.getElementById('qa-history');
+
+    // Remove empty state if it exists
+    const emptyState = qaHistory.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+
+    const qaItem = document.createElement('div');
+    qaItem.className = 'qa-item';
+    qaItem.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px;';
+    qaItem.innerHTML = `
+        <div style="margin-bottom: 16px;">
+            <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">❓ Question:</div>
+            <div style="color: var(--text-light); line-height: 1.6;">${question}</div>
+        </div>
+        <div>
+            <div style="font-weight: 600; color: var(--success); margin-bottom: 8px;">✅ Answer:</div>
+            <div style="color: var(--text-light); line-height: 1.8; white-space: pre-wrap;">${answer.replace(/\n/g, '<br>')}</div>
+        </div>
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-gray);">
+            ${new Date().toLocaleString()}
+        </div>
+    `;
+
+    // Insert at the beginning
+    qaHistory.insertBefore(qaItem, qaHistory.firstChild);
+}

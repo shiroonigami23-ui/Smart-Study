@@ -10,25 +10,19 @@
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
     const icons = {
         success: '✅',
         error: '❌',
         warning: '⚠️',
         info: 'ℹ️'
     };
-    
     toast.innerHTML = `
         <span class="toast-icon">${icons[type] || icons.info}</span>
         <span class="toast-message">${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
-    
     container.appendChild(toast);
-    
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);
@@ -65,18 +59,14 @@ function showModal(title, body, onConfirm = null) {
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
     const confirmBtn = document.getElementById('modal-confirm');
-
     if (!overlay || !modalTitle || !modalBody || !confirmBtn) return;
-    
     modalTitle.textContent = title;
     modalBody.innerHTML = body;
-    
     overlay.classList.remove('hidden');
-    
+
     // Remove old listener and add new one
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
     newConfirmBtn.onclick = () => {
         if (onConfirm) onConfirm();
         hideModal();
@@ -114,7 +104,6 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
  */
 function speak(text) {
     if (!speechSynthesis || !appState.userProfile.settings.voiceEnabled) return;
-    
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
@@ -131,17 +120,17 @@ function startVoiceRecognition(callback) {
         showToast('Voice recognition not available', 'error');
         return;
     }
-    
+
     speechRecognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         callback(transcript);
     };
-    
+
     speechRecognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
         showToast('Voice recognition error. Please try again.', 'error');
     };
-    
+
     try {
         speechRecognition.start();
         showToast('Listening...', 'info');
@@ -163,7 +152,6 @@ function startVoiceRecognition(callback) {
 function calculateLevel(xp) {
     let level = 1;
     let title = "Beginner";
-    
     for (let i = XP_LEVELS.length - 1; i >= 0; i--) {
         if (xp >= XP_LEVELS[i].xpRequired) {
             level = XP_LEVELS[i].level;
@@ -171,7 +159,6 @@ function calculateLevel(xp) {
             break;
         }
     }
-    
     return { level, title };
 }
 
@@ -184,7 +171,6 @@ function formatTime(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
     } else if (minutes > 0) {
@@ -194,3 +180,15 @@ function formatTime(seconds) {
     }
 }
 
+/**
+ * Formats a file size in bytes to a human-readable string.
+ * @param {number} bytes The file size in bytes.
+ * @returns {string} The formatted file size.
+ */
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
