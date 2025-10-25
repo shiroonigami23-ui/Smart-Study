@@ -743,22 +743,28 @@ function initializeApp() {
     addRecentActivity('🎉', 'Welcome! Start by uploading study materials or try a sample quiz.', 'Just now');
 }
 
-/**
- * Runs when the DOM is fully loaded.
- */
-document.addEventListener('DOMContentLoaded', () => {
-    addEventListeners();
-    
-    // Check if user is "logged in" (simulated)
-    // In a real app, Firebase's onAuthStateChanged would handle this.
-    if (appState.currentUser) {
-        initializeApp();
-        showPage('app'); // ui.js
-    } else {
-        showPage('auth'); // ui.js
-    }
-    
-    console.log('%c🎓 Smart Study Assistant Loaded!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
-    console.log('%cRemember to replace API keys and Firebase config!', 'color: #f59e0b; font-size: 14px;');
-});
+    /**
+     * Runs when the DOM is fully loaded.
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        const firebaseServices = initializeFirebase(); 
+        if (!firebaseServices.auth || !firebaseServices.db) {
+            showToast("Critical Error: Could not connect to Firebase services. Please refresh.", "error");
+            console.error("Firebase failed to initialize. Auth/DB objects are null.");
+            return; 
+        }
 
+        addEventListeners();
+        
+         if (appState.currentUser) {
+            initializeApp(); // Initialize dashboard etc. if user exists in state (simulated)
+            showPage('app'); // ui.js
+        } else {
+            showPage('auth'); // ui.js - Show login page if no user in state
+        }
+        
+        console.log('%c🎓 Smart Study Assistant Loaded!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
+        console.log('%cFirebase should be initialized now.', 'color: #10b981; font-size: 14px;');
+        // console.log('%cRemember to replace API keys and Firebase config!', 'color: #f59e0b; font-size: 14px;'); // Keep this reminder if needed
+    });
+    
