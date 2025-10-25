@@ -743,28 +743,40 @@ function initializeApp() {
     addRecentActivity('🎉', 'Welcome! Start by uploading study materials or try a sample quiz.', 'Just now');
 }
 
-    /**
-     * Runs when the DOM is fully loaded.
-     */
-    document.addEventListener('DOMContentLoaded', () => {
-        const firebaseServices = initializeFirebase(); 
-        if (!firebaseServices.auth || !firebaseServices.db) {
-            showToast("Critical Error: Could not connect to Firebase services. Please refresh.", "error");
-            console.error("Firebase failed to initialize. Auth/DB objects are null.");
-            return; 
-        }
+  /**
+ * Runs when the DOM is fully loaded. Initializes Firebase FIRST, then adds listeners.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded. Initializing Firebase..."); 
 
-        addEventListeners();
-        
-         if (appState.currentUser) {
-            initializeApp(); // Initialize dashboard etc. if user exists in state (simulated)
-            showPage('app'); // ui.js
-        } else {
-            showPage('auth'); // ui.js - Show login page if no user in state
-        }
-        
-        console.log('%c🎓 Smart Study Assistant Loaded!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
-        console.log('%cFirebase should be initialized now.', 'color: #10b981; font-size: 14px;');
-        // console.log('%cRemember to replace API keys and Firebase config!', 'color: #f59e0b; font-size: 14px;'); // Keep this reminder if needed
-    });
+    // --- STEP 1: Initialize Firebase ---
+    // Make sure this is the VERY FIRST operation
+    const firebaseServices = initializeFirebase(); // api.js
     
+    // Check if initialization succeeded
+    if (!firebaseServices || !firebaseServices.auth || !firebaseServices.db) {
+        showToast("Critical Error: Could not connect to Firebase. Please refresh.", "error"); 
+        console.error("Firebase failed to initialize. Auth/DB objects are null.");
+        return; 
+    }
+    console.log("Firebase initialized successfully in main.js."); 
+
+    // --- STEP 2: Add Event Listeners ---
+    // Only add listeners AFTER Firebase is confirmed to be ready
+    console.log("Adding event listeners..."); 
+    addEventListeners();
+    console.log("Event listeners added."); 
+    
+    // --- STEP 3: Check Initial Auth State & Show Page ---
+    if (appState.currentUser) { 
+        console.log("User found in state, initializing app."); 
+        initializeApp(); // Initialize dashboard etc.
+        showPage('app'); // ui.js
+    } else {
+        console.log("No user in state, showing auth page."); 
+        showPage('auth'); // ui.js - Show login page
+    }
+    
+    console.log('%c🎓 Smart Study Assistant Loaded!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
+    console.log('%cFirebase initialization sequence complete.', 'color: #10b981; font-size: 14px;');
+});
