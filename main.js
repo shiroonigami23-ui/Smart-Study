@@ -66,11 +66,51 @@ async function handleSignup(e) {
  * Handles guest mode login.
  */
 function handleGuestLogin() {
+    console.log("handleGuestLogin: Starting guest login..."); // LOG
     appState.userProfile.name = 'Guest'; // state.js
     showToast('Welcome, Guest!', 'info'); // utils.js
-    initializeApp();
+    
+    console.log("handleGuestLogin: Calling initializeApp..."); // LOG
+    initializeApp(); 
+    
+    console.log("handleGuestLogin: Calling showPage('app')..."); // LOG
     showPage('app'); // ui.js
+    console.log("handleGuestLogin: Finished."); // LOG
 }
+
+/**
+ * Main function to initialize the application after login/guest entry.
+ */
+function initializeApp() {
+    console.log("initializeApp: Starting..."); // LOG
+    try {
+        console.log("initializeApp: Calling updateStreak..."); // LOG
+        updateStreak(); // in main.js
+        console.log("initializeApp: Calling updateDashboardStats..."); // LOG
+        updateDashboardStats(); // ui.js
+        console.log("initializeApp: Calling updateProfileStats..."); // LOG
+        updateProfileStats(); // ui.js
+        console.log("initializeApp: Calling checkStudyTimeBadges..."); // LOG
+        checkStudyTimeBadges(); // in main.js
+        
+        // Welcome message timeout
+        setTimeout(() => {
+            console.log("initializeApp: Attempting welcome speech..."); // LOG
+            if (appState.userProfile.settings.voiceEnabled) {
+                speak(`Welcome back, ${appState.userProfile.name}!`); // utils.js
+            }
+        }, 500);
+        
+        console.log("initializeApp: Calling addRecentActivity..."); // LOG
+        addRecentActivity('🎓', 'Welcome! Start by uploading study materials or try a sample quiz.', 'Just now'); // ui.js
+        console.log("initializeApp: Finished successfully."); // LOG
+    } catch (error) {
+        console.error("ERROR during initializeApp:", error); // LOG ERRORS
+        showToast("An error occurred initializing the app.", "error"); // utils.js
+    }
+}
+
+// --- Keep the rest of main.js, including DOMContentLoaded ---
 
 /**
  * Handles user logout.
