@@ -1925,3 +1925,93 @@ input:checked + .toggle-slider:before {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-gray);
 }
+/* --- NEW: NOTES & Q&A SECTIONS STYLES --- */
+
+/* Notes Export Options */
+.export-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+/* Content Container for Notes/Q&A */
+.content-container {
+    padding: 24px 0;
+}
+
+/* Empty State for Notes/Q&A */
+.empty-state {
+    max-width: 500px;
+    margin: 60px auto;
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    color: var(--text-gray);
+    font-size: 16px;
+}
+
+/* Q&A Input Area */
+.qa-input-area {
+    max-width: 800px;
+    margin: 0 auto 32px;
+}
+
+/* Q&A History Item Styles */
+.qa-history .qa-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    animation: slideUp 0.3s ease;
+}
+
+.qa-history .qa-item > div:first-child {
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+.qa-history .qa-item > div:nth-child(2) {
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+.qa-history .qa-item .qa-answer {
+    font-weight: 600;
+    color: var(--success);
+    margin-top: 16px;
+}
+
+/* Content Display for Notes/Summary */
+.content-display {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    line-height: 1.8;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.content-display pre {
+    white-space: pre-wrap;
+}
+
+/* Responsive adjustments for Q&A */
+@media (max-width: 640px) {
+    .qa-history .qa-item {
+        padding: 16px;
+    }
+}

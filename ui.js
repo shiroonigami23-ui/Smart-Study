@@ -84,6 +84,9 @@ function showFlashcardView(viewId) {
  * Updates all statistics and text on the dashboard.
  */
 function updateDashboardStats() {
+    // Safety check for userProfile availability
+    if (!appState.userProfile) return;
+
     document.getElementById('welcome-message').textContent = `Welcome back, ${appState.userProfile.name}!`;
     document.getElementById('streak-count').textContent = appState.userProfile.streak;
     document.getElementById('total-study-time').textContent = formatTime(appState.userProfile.studyTime);
@@ -91,24 +94,28 @@ function updateDashboardStats() {
     document.getElementById('current-level').textContent = appState.userProfile.level;
     document.getElementById('total-xp').textContent = appState.userProfile.xp;
 
-    // Update latest badges
+    // Update latest badges (SAMPLE_BADGES is from config.js)
     const latestBadgesDiv = document.getElementById('latest-badges');
-    const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id));
+    const earnedBadges = (typeof SAMPLE_BADGES !== 'undefined') 
+        ? SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id)) 
+        : [];
 
-    if (earnedBadges.length > 0) {
-        latestBadgesDiv.innerHTML = earnedBadges.slice(-3).map(badge => `
-            <div class="badge-mini" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px;">
-                <div style="font-size: 32px; margin-bottom: 8px;">${badge.icon}</div>
-                <div style="font-size: 13px; font-weight: 600;">${badge.name}</div>
-            </div>
-        `).join('');
-    } else {
-        latestBadgesDiv.innerHTML = `
-            <div class="badge-placeholder">
-                <span>🏅</span>
-                <p>Complete activities to earn badges!</p>
-            </div>
-        `;
+    if (latestBadgesDiv) {
+        if (earnedBadges.length > 0) {
+            latestBadgesDiv.innerHTML = earnedBadges.slice(-3).map(badge => `
+                <div class="badge-mini" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 32px; margin-bottom: 8px;">${badge.icon}</div>
+                    <div style="font-size: 13px; font-weight: 600; color: ${badge.color};">${badge.name}</div>
+                </div>
+            `).join('');
+        } else {
+            latestBadgesDiv.innerHTML = `
+                <div class="badge-placeholder">
+                    <span>🏅</span>
+                    <p>Complete activities to earn badges!</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -121,6 +128,12 @@ function updateDashboardStats() {
 function addRecentActivity(icon, text, time) {
     const activityList = document.getElementById('activity-list');
     if (!activityList) return;
+
+    // Remove the placeholder if it exists
+    const placeholder = activityList.querySelector('.activity-item:last-child');
+    if (placeholder && placeholder.textContent.includes('Get started')) {
+        activityList.innerHTML = '';
+    }
 
     const activityItem = document.createElement('div');
     activityItem.className = 'activity-item';
@@ -154,27 +167,39 @@ function displayQuestion() {
 
     // Update progress bar
     const progress = ((quiz.currentQuestion + 1) / quiz.questions.length) * 100;
-    document.getElementById('quiz-progress-fill').style.width = `${progress}%`;
-    document.getElementById('quiz-question-number').textContent = 
+    const progressFill = document.getElementById('quiz-progress-fill');
+    if (progressFill) progressFill.style.width = `${progress}%`;
+    
+    const questionNumberEl = document.getElementById('quiz-question-number');
+    if (questionNumberEl) questionNumberEl.textContent = 
         `Question ${quiz.currentQuestion + 1} of ${quiz.questions.length}`;
 
     // Display question
-    document.getElementById('question-text').textContent = question.question;
+    const questionTextEl = document.getElementById('question-text');
+    if (questionTextEl) questionTextEl.textContent = question.question;
 
     // Display options
     const optionsContainer = document.getElementById('options-container');
+    if (!optionsContainer) return;
     optionsContainer.innerHTML = '';
     question.options.forEach((option, index) => {
         const optionDiv = document.createElement('div');
         optionDiv.className = 'option';
         optionDiv.dataset.index = index;
         optionDiv.textContent = option;
-        optionDiv.addEventListener('click', () => selectOption(optionDiv));
+        // The selectOption function is defined globally in ui.js
+        optionDiv.addEventListener('click', () => selectOption(optionDiv)); 
         optionsContainer.appendChild(optionDiv);
     });
 
-    // Hide explanation card
-    document.getElementById('explanation-card').classList.add('hidden');
+    // Hide explanation card and enable controls
+    const explanationCard = document.getElementById('explanation-card');
+    if (explanationCard) explanationCard.classList.add('hidden');
+    
+    const submitBtn = document.getElementById('submit-answer-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    if (submitBtn) submitBtn.disabled = false;
+    if (skipBtn) skipBtn.disabled = false;
 }
 
 /**
@@ -197,22 +222,17 @@ function showExplanation(isCorrect) {
     const question = quiz.questions[quiz.currentQuestion];
     const explanationCard = document.getElementById('explanation-card');
 
+    if (!explanationCard) return;
+
     // Update UI based on correctness
     const icon = document.getElementById('explanation-icon');
     const title = document.getElementById('explanation-title');
     const text = document.getElementById('explanation-text');
 
-    if (isCorrect) {
-        icon.textContent = '✅';
-        title.textContent = 'Correct!';
-        explanationCard.style.borderColor = 'var(--success)';
-    } else {
-        icon.textContent = '❌';
-        title.textContent = 'Not quite right';
-        explanationCard.style.borderColor = 'var(--danger)';
-    }
-
-    text.textContent = question.explanation;
+    if (icon) icon.textContent = isCorrect ? '✅' : '❌';
+    if (title) title.textContent = isCorrect ? 'Correct!' : 'Not quite right';
+    explanationCard.style.borderColor = isCorrect ? 'var(--success)' : 'var(--danger)';
+    if (text) text.textContent = question.explanation;
 
     // Highlight correct/incorrect options
     const options = document.querySelectorAll('.option');
@@ -237,6 +257,8 @@ function showExplanation(isCorrect) {
  */
 function startQuizTimerUI(seconds, onComplete) {
     const timerElement = document.getElementById('quiz-timer');
+    if (!timerElement) return;
+    
     timerElement.classList.remove('hidden');
 
     let remaining = seconds;
@@ -249,6 +271,7 @@ function startQuizTimerUI(seconds, onComplete) {
         if (remaining <= 0) {
             clearInterval(interval);
             onComplete();
+            return;
         }
         remaining--;
     };
@@ -265,22 +288,31 @@ function displayQuizResults() {
     showQuizView('quiz-results');
 
     const quiz = appState.currentQuiz;
+    if (!quiz) return;
+    
     const correctAnswers = quiz.answers.filter(a => a.correct).length;
     const totalQuestions = quiz.questions.length;
     const percentage = Math.round((correctAnswers / totalQuestions) * 100) || 0;
     const timeTaken = Math.floor((Date.now() - quiz.startTime) / 1000);
 
-    // Calculate XP earned
+    // Calculate XP earned (basic calculation for display)
     let xpEarned = 50 + (correctAnswers * 10);
     if (percentage === 100) {
         xpEarned += 100;
     }
 
     // Update results display
-    document.getElementById('score-percentage').textContent = `${percentage}%`;
-    document.getElementById('correct-answers').textContent = correctAnswers;
-    document.getElementById('time-taken').textContent = formatTime(timeTaken);
-    document.getElementById('xp-earned').textContent = `+${xpEarned}`;
+    const scorePercentageEl = document.getElementById('score-percentage');
+    if (scorePercentageEl) scorePercentageEl.textContent = `${percentage}%`;
+    
+    const correctAnswersEl = document.getElementById('correct-answers');
+    if (correctAnswersEl) correctAnswersEl.textContent = correctAnswers;
+    
+    const timeTakenEl = document.getElementById('time-taken');
+    if (timeTakenEl) timeTakenEl.textContent = formatTime(timeTaken);
+    
+    const xpEarnedEl = document.getElementById('xp-earned');
+    if (xpEarnedEl) xpEarnedEl.textContent = `+${xpEarned}`;
 
     // Update results icon and text based on performance
     const resultsIcon = document.getElementById('results-icon');
@@ -288,21 +320,21 @@ function displayQuizResults() {
     const scoreText = document.getElementById('score-text');
 
     if (percentage === 100) {
-        resultsIcon.textContent = '🎉';
-        resultsTitle.textContent = 'Perfect Score!';
-        scoreText.textContent = 'Outstanding work!';
+        if (resultsIcon) resultsIcon.textContent = '🎉';
+        if (resultsTitle) resultsTitle.textContent = 'Perfect Score!';
+        if (scoreText) scoreText.textContent = 'Outstanding work!';
     } else if (percentage >= 80) {
-        resultsIcon.textContent = '🌟';
-        resultsTitle.textContent = 'Excellent!';
-        scoreText.textContent = 'Great job!';
+        if (resultsIcon) resultsIcon.textContent = '🌟';
+        if (resultsTitle) resultsTitle.textContent = 'Excellent!';
+        if (scoreText) scoreText.textContent = 'Great job!';
     } else if (percentage >= 60) {
-        resultsIcon.textContent = '👍';
-        resultsTitle.textContent = 'Good Effort!';
-        scoreText.textContent = 'Keep practicing!';
+        if (resultsIcon) resultsIcon.textContent = '👍';
+        if (resultsTitle) resultsTitle.textContent = 'Good Effort!';
+        if (scoreText) scoreText.textContent = 'Keep practicing!';
     } else {
-        resultsIcon.textContent = '📚';
-        resultsTitle.textContent = 'Keep Learning!';
-        scoreText.textContent = 'Review the material and try again.';
+        if (resultsIcon) resultsIcon.textContent = '📚';
+        if (resultsTitle) resultsTitle.textContent = 'Keep Learning!';
+        if (scoreText) scoreText.textContent = 'Review the material and try again.';
     }
 }
 
@@ -315,19 +347,25 @@ function displayQuizResults() {
  */
 function displayFlashcard() {
     const deck = appState.currentFlashcardDeck;
+    if (!deck || deck.currentCard >= deck.cards.length) return;
     const card = deck.cards[deck.currentCard];
 
     // Update counter
-    document.getElementById('flashcard-counter').textContent = 
+    const counterEl = document.getElementById('flashcard-counter');
+    if (counterEl) counterEl.textContent = 
         `Card ${deck.currentCard + 1} of ${deck.cards.length}`;
 
     // Update card content
-    document.getElementById('flashcard-front-content').textContent = card.front;
-    document.getElementById('flashcard-back-content').textContent = card.back;
-    document.getElementById('flashcard-category').textContent = card.category || 'General';
+    const frontEl = document.getElementById('flashcard-front-content');
+    const backEl = document.getElementById('flashcard-back-content');
+    const categoryEl = document.getElementById('flashcard-category');
+
+    if (frontEl) frontEl.textContent = card.front;
+    if (backEl) backEl.textContent = card.back;
+    if (categoryEl) categoryEl.textContent = card.category || 'General';
 
     // Remove flipped state
-    document.getElementById('flashcard').classList.remove('flipped');
+    document.getElementById('flashcard')?.classList.remove('flipped');
 
     // Update progress
     updateFlashcardProgress();
@@ -338,9 +376,15 @@ function displayFlashcard() {
  */
 function updateFlashcardProgress() {
     const deck = appState.currentFlashcardDeck;
-    document.getElementById('known-count').textContent = deck.knownCards.length;
-    document.getElementById('marked-count').textContent = deck.markedCards.length;
-    document.getElementById('remaining-count').textContent = 
+    if (!deck) return;
+    
+    const knownEl = document.getElementById('known-count');
+    const markedEl = document.getElementById('marked-count');
+    const remainingEl = document.getElementById('remaining-count');
+    
+    if (knownEl) knownEl.textContent = deck.knownCards.length;
+    if (markedEl) markedEl.textContent = deck.markedCards.length;
+    if (remainingEl) remainingEl.textContent = 
         deck.cards.length - deck.currentCard - 1;
 }
 
@@ -351,8 +395,11 @@ function displayFlashcardResults() {
     showFlashcardView('flashcards-complete');
 
     const deck = appState.currentFlashcardDeck;
-    document.getElementById('total-reviewed').textContent = deck.cards.length;
-    document.getElementById('final-known-count').textContent = deck.knownCards.length;
+    const reviewedEl = document.getElementById('total-reviewed');
+    const knownFinalEl = document.getElementById('final-known-count');
+    
+    if (reviewedEl) reviewedEl.textContent = deck.cards.length;
+    if (knownFinalEl) knownFinalEl.textContent = deck.knownCards.length;
 }
 
 // ====================================
@@ -363,22 +410,31 @@ function displayFlashcardResults() {
  * Updates the progress section with badges and history.
  */
 function updateProgressSection() {
-    // Update badges grid
     const badgesGrid = document.getElementById('badges-grid');
-    badgesGrid.innerHTML = SAMPLE_BADGES.map(badge => {
-        const isUnlocked = appState.userProfile.badges.includes(badge.id);
+    if (!badgesGrid) return;
+    
+    // Safety check for global constant
+    const allBadges = (typeof SAMPLE_BADGES !== 'undefined') ? SAMPLE_BADGES : [];
+    
+    // Update badges grid
+    badgesGrid.innerHTML = allBadges.map(badge => {
+        const isUnlocked = appState.userProfile?.badges.includes(badge.id);
+        const lockedClass = isUnlocked ? '' : 'locked';
+        const xpText = isUnlocked ? 'Unlocked!' : `+${badge.xpReward} XP`;
         return `
-            <div class="badge-card ${isUnlocked ? '' : 'locked'}">
-                <div class="badge-icon">${badge.icon}</div>
+            <div class="badge-card ${lockedClass}" style="border: 2px solid ${isUnlocked ? badge.color : 'var(--border)'};">
+                <div class="badge-icon" style="color: ${isUnlocked ? badge.color : 'var(--text-gray)'};">${badge.icon}</div>
                 <div class="badge-name">${badge.name}</div>
                 <div class="badge-description">${badge.description}</div>
-                <div class="badge-xp">${isUnlocked ? 'Unlocked!' : `+${badge.xpReward} XP`}</div>
+                <div class="badge-xp" style="background: ${isUnlocked ? badge.color + '22' : 'rgba(255,255,255,0.1)'};">${xpText}</div>
             </div>
         `;
     }).join('');
 
     // Update quiz history
     const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
     if (appState.quizHistory.length === 0) {
         historyList.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 40px;">No study sessions yet. Start a quiz to see your history!</p>';
         return;
@@ -401,34 +457,70 @@ function updateProgressSection() {
 
 /**
  * Updates the profile section with user stats and badges.
+ * Now handles display of Cloudinary avatar.
  */
 function updateProfileStats() {
-    document.getElementById('profile-name').textContent = appState.userProfile.name;
-    document.getElementById('profile-email').textContent = appState.userProfile.email || 'guest@studyhub.com';
+    if (!appState.userProfile) return;
+    
+    const { name, email, avatarUrl, xp, quizzesCompleted, flashcardsReviewed, studyTime, badges } = appState.userProfile;
 
-    const { level, title } = calculateLevel(appState.userProfile.xp);
-    document.getElementById('profile-level-badge').textContent = `Level ${level} - ${title}`;
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-email').textContent = email || 'guest@studyhub.com';
 
-    document.getElementById('profile-xp').textContent = appState.userProfile.xp;
-    document.getElementById('profile-quizzes').textContent = appState.userProfile.quizzesCompleted;
-    document.getElementById('profile-flashcards').textContent = appState.userProfile.flashcardsReviewed;
-    document.getElementById('profile-study-time').textContent = formatTime(appState.userProfile.studyTime);
+    // --- Profile Picture Update ---
+    const avatarImg = document.getElementById('profile-avatar-img');
+    const avatarPlaceholder = document.getElementById('profile-avatar-placeholder');
+    const avatarContainer = document.getElementById('profile-avatar-container');
+    
+    if (avatarImg && avatarPlaceholder && avatarContainer) {
+         if (avatarUrl) {
+            // getAvatarUrl is defined in cloudinary.js
+            avatarImg.src = getAvatarUrl(avatarUrl, 120); 
+            avatarImg.style.display = 'block';
+            avatarPlaceholder.style.display = 'none';
+            avatarContainer.style.background = 'none'; 
+        } else {
+            avatarImg.style.display = 'none';
+            avatarPlaceholder.style.display = 'block';
+            avatarContainer.style.background = 'var(--gradient-1)'; // Fallback BG
+        }
+    }
+    // -----------------------------
 
-    // Update badges in profile
+    // calculateLevel is defined in utils.js
+    const { level, title } = calculateLevel(xp); 
+    
+    const levelBadgeEl = document.getElementById('profile-level-badge');
+    if (levelBadgeEl) levelBadgeEl.textContent = `Level ${level} - ${title}`;
+
+    document.getElementById('profile-xp').textContent = xp;
+    document.getElementById('profile-quizzes').textContent = quizzesCompleted;
+    document.getElementById('profile-flashcards').textContent = flashcardsReviewed;
+    document.getElementById('profile-study-time').textContent = formatTime(studyTime);
+
+    // Update badges in profile (SAMPLE_BADGES is from config.js)
     const profileBadgesGrid = document.getElementById('profile-badges-grid');
-    const earnedBadges = SAMPLE_BADGES.filter(b => appState.userProfile.badges.includes(b.id));
+    const allBadges = (typeof SAMPLE_BADGES !== 'undefined') ? SAMPLE_BADGES : [];
+    const earnedBadges = allBadges.filter(b => badges.includes(b.id));
 
-    if (earnedBadges.length === 0) {
-        profileBadgesGrid.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 40px;">Complete activities to earn badges!</p>';
-    } else {
-        profileBadgesGrid.innerHTML = earnedBadges.map(badge => `
-            <div class="badge-card">
-                <div class="badge-icon">${badge.icon}</div>
-                <div class="badge-name">${badge.name}</div>
-                <div class="badge-description">${badge.description}</div>
-                <div class="badge-xp">Unlocked!</div>
-            </div>
-        `).join('');
+    if (profileBadgesGrid) {
+        if (earnedBadges.length === 0) {
+            profileBadgesGrid.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 40px;">Complete activities to earn badges!</p>';
+        } else {
+            profileBadgesGrid.innerHTML = earnedBadges.map(badge => `
+                <div class="badge-card" style="border: 2px solid ${badge.color};">
+                    <div class="badge-icon" style="color: ${badge.color};">${badge.icon}</div>
+                    <div class="badge-name">${badge.name}</div>
+                    <div class="badge-description">${badge.description}</div>
+                    <div class="badge-xp">Unlocked!</div>
+                </div>
+            `).join('');
+        }
+        
+        // Update settings toggles
+        document.getElementById('voice-toggle').checked = appState.userProfile.settings.voiceEnabled;
+        document.getElementById('sound-toggle').checked = appState.userProfile.settings.soundEnabled;
+        document.getElementById('reminder-toggle').checked = appState.userProfile.settings.remindersEnabled;
     }
 }
 
@@ -437,16 +529,32 @@ function updateProfileStats() {
 // ====================================
 
 /**
- * Displays generated notes in the notes section.
+ * Displays generated notes in the notes section and enables export buttons.
  * @param {string} notes The generated notes content.
  */
 function displayGeneratedNotes(notes) {
     const notesContainer = document.getElementById('notes-container');
+    if (!notesContainer) return;
+    
+    // Simple markdown to HTML conversion for basic formatting
+    const formattedNotes = notes
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+        .replace(/^(#+)\s*(.*)/gm, (match, hashes, content) => { // Headings
+            const level = hashes.length > 3 ? 3 : hashes.length;
+            return `<h${level}>${content}</h${level}>`;
+        })
+        .replace(/\n/g, '<br>'); // Newlines to <br>
+
     notesContainer.innerHTML = `
-        <div class="content-display" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; line-height: 1.8; max-width: 900px; margin: 0 auto;">
-            <div style="white-space: pre-wrap; font-size: 15px;">${notes.replace(/\n/g, '<br>')}</div>
+        <div class="content-display">
+            <div style="font-size: 15px;">${formattedNotes}</div>
         </div>
     `;
+    
+    // Enable export buttons
+    document.getElementById('export-notes-pdf-btn').disabled = false;
+    document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-mp3-btn').disabled = false;
 }
 
 /**
@@ -454,8 +562,14 @@ function displayGeneratedNotes(notes) {
  * @param {string} summary The generated summary content.
  */
 function displayGeneratedSummary(summary) {
-    const formattedSummary = `<div style="line-height: 1.8; white-space: pre-wrap;">${summary.replace(/\n/g, '<br>')}</div>`;
-    showModal('📄 Content Summary', formattedSummary);
+    // Simple markdown to HTML conversion for basic formatting in modal
+    const formattedSummary = summary
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^- (.*)/gm, '<li>$1</li>')
+        .replace(/\n/g, '<br>');
+        
+    const modalContent = `<div style="line-height: 1.8;">${formattedSummary}</div>`;
+    showModal('📄 Content Summary', modalContent);
 }
 
 /**
@@ -465,6 +579,7 @@ function displayGeneratedSummary(summary) {
  */
 function addQAToHistory(question, answer) {
     const qaHistory = document.getElementById('qa-history');
+    if (!qaHistory) return;
 
     // Remove empty state if it exists
     const emptyState = qaHistory.querySelector('.empty-state');
@@ -474,15 +589,14 @@ function addQAToHistory(question, answer) {
 
     const qaItem = document.createElement('div');
     qaItem.className = 'qa-item';
-    qaItem.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px;';
     qaItem.innerHTML = `
-        <div style="margin-bottom: 16px;">
-            <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">❓ Question:</div>
-            <div style="color: var(--text-light); line-height: 1.6;">${question}</div>
+        <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">❓ Question:</div>
+            <div style="line-height: 1.6;">${question}</div>
         </div>
         <div>
-            <div style="font-weight: 600; color: var(--success); margin-bottom: 8px;">✅ Answer:</div>
-            <div style="color: var(--text-light); line-height: 1.8; white-space: pre-wrap;">${answer.replace(/\n/g, '<br>')}</div>
+            <div style="font-weight: 600; color: var(--success); margin-bottom: 4px;">✅ Answer:</div>
+            <div style="line-height: 1.8; white-space: pre-wrap;">${answer.replace(/\n/g, '<br>')}</div>
         </div>
         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-gray);">
             ${new Date().toLocaleString()}

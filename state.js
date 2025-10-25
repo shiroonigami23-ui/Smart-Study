@@ -9,6 +9,7 @@ const appState = {
     userProfile: {
         name: "Guest",
         email: "",
+        avatarUrl: "", 
         xp: 0,
         level: 1,
         streak: 0,

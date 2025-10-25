@@ -82,21 +82,30 @@ function hideModal() {
 }
 
 // ====================================
-// WEB SPEECH API
+// WEB SPEECH API (CRITICAL FIX: Safe initialization)
 // ====================================
 
 let speechSynthesis = window.speechSynthesis;
 let speechRecognition = null;
 
+// Only initialize speech recognition if the API is supported
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    speechRecognition = new SpeechRecognition();
-    speechRecognition.continuous = false;
-    speechRecognition.interimResults = false;
-    speechRecognition.lang = 'en-US';
+    try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        speechRecognition = new SpeechRecognition();
+        speechRecognition.continuous = false;
+        speechRecognition.interimResults = false;
+        speechRecognition.lang = 'en-US';
+    } catch (e) {
+        console.warn("Speech Recognition API initialization failed:", e);
+        speechRecognition = null;
+    }
 } else {
     console.warn("Speech Recognition API not supported in this browser.");
 }
+
+// utils.js
+let currentUtterance = null; // Declare a global variable near the top of utils.js
 
 /**
  * Speaks the given text using the browser's speech synthesis.
@@ -104,12 +113,16 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
  */
 function speak(text) {
     if (!speechSynthesis || !appState.userProfile.settings.voiceEnabled) return;
+    
     speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    speechSynthesis.speak(utterance);
+    
+    // Assign the utterance to a global variable to prevent garbage collection
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.rate = 0.9;
+    currentUtterance.pitch = 1;
+    speechSynthesis.speak(currentUtterance);
 }
+
 
 /**
  * Starts voice recognition and calls a callback with the transcript.
@@ -130,6 +143,11 @@ function startVoiceRecognition(callback) {
         console.error("Speech recognition error:", event.error);
         showToast('Voice recognition error. Please try again.', 'error');
     };
+    
+    // Safety check to ensure it's not already running
+    if (speechRecognition.recognizing) {
+        speechRecognition.stop(); 
+    }
 
     try {
         speechRecognition.start();
@@ -150,6 +168,12 @@ function startVoiceRecognition(callback) {
  * @returns {{level: number, title: string}} The calculated level and title.
  */
 function calculateLevel(xp) {
+    // XP_LEVELS is a global constant from config.js
+    if (typeof XP_LEVELS === 'undefined') {
+        console.error("XP_LEVELS is not defined. Check config.js.");
+        return { level: 1, title: "Beginner" };
+    }
+    
     let level = 1;
     let title = "Beginner";
     for (let i = XP_LEVELS.length - 1; i >= 0; i--) {

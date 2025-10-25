@@ -16,6 +16,13 @@ const FIREBASE_CONFIG = {
 const GEMINI_API_KEY = "AIzaSyD5tQg_ls50hZGVX24zGqGN0nDbHM1xsNE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
+// Cloudinary Configuration
+const CLOUDINARY_CONFIG = {
+    cloudName: 'drml250ku',
+    uploadPreset: 'study_assistant'
+};
+
+
 // ====================================
 // SAMPLE DATA
 // ====================================

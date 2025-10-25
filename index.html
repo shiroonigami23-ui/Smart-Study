@@ -5,32 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Study Assistant - AI-Powered Learning</title>
 
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- CSS Files -->
     <link rel="stylesheet" href="design-system.css">
     <link rel="stylesheet" href="main.css">
 
-    <!-- Firebase v8 Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-    <!-- Mammoth.js for DOCX -->
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
-    <!-- JSZip for EPUB (dependency) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    <!-- EPub.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+
 </head>
 <body>
-    <!-- Auth Page -->
     <div id="auth-page" class="page active">
         <div class="auth-container">
             <div class="auth-card">
@@ -47,7 +52,6 @@
                     <button class="auth-tab" data-tab="signup">Sign Up</button>
                 </div>
 
-                <!-- Login Form -->
                 <form id="login-form" class="auth-form active">
                     <div class="form-group">
                         <label for="login-email">Email</label>
@@ -63,7 +67,6 @@
                     </button>
                 </form>
 
-                <!-- Signup Form -->
                 <form id="signup-form" class="auth-form">
                     <div class="form-group">
                         <label for="signup-name">Full Name</label>
@@ -91,9 +94,7 @@
         </div>
     </div>
 
-    <!-- Main App Page -->
     <div id="app-page" class="page">
-        <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-brand">
                 <span>🎓</span>
@@ -120,6 +121,10 @@
                     <span class="nav-icon">📝</span>
                     <span>Notes</span>
                 </button>
+                <button class="nav-item" data-section="convert">
+                    <span class="nav-icon">🔄</span>
+                    <span>Convert</span>
+                </button>
                 <button class="nav-item" data-section="qa">
                     <span class="nav-icon">❓</span>
                     <span>Q&A</span>
@@ -140,7 +145,6 @@
             </button>
         </nav>
 
-        <!-- Dashboard Section -->
         <section id="dashboard-section" class="app-section active">
             <div class="section-header">
                 <div>
@@ -235,7 +239,6 @@
             </div>
         </section>
 
-        <!-- Upload Section -->
         <section id="upload-section" class="app-section">
             <div class="section-header">
                 <div>
@@ -263,13 +266,13 @@
 
                 <div class="text-input-area">
                     <label for="content-text">Paste Your Text Content</label>
-                    <textarea id="content-text" rows="8" placeholder="Paste your study material here..." style="width: 100%; padding: 16px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical;"></textarea>
+                    <textarea id="content-text" rows="8" placeholder="Paste your study material here..." class="form-control"></textarea>
                 </div>
 
                 <div class="upload-options">
                     <div class="form-group">
                         <label for="subject-select">Subject</label>
-                        <select id="subject-select">
+                        <select id="subject-select" class="form-control">
                             <option value="">Select Subject</option>
                             <option value="Mathematics">Mathematics</option>
                             <option value="Science">Science</option>
@@ -281,7 +284,7 @@
                     </div>
                     <div class="form-group">
                         <label for="difficulty-select">Difficulty</label>
-                        <select id="difficulty-select">
+                        <select id="difficulty-select" class="form-control">
                             <option value="easy">Easy</option>
                             <option value="medium">Medium</option>
                             <option value="hard">Hard</option>
@@ -289,7 +292,7 @@
                     </div>
                     <div class="form-group">
                         <label for="question-count">Number of Questions</label>
-                        <input type="number" id="question-count" value="5" min="1" max="20">
+                        <input type="number" id="question-count" value="5" min="1" max="20" class="form-control">
                     </div>
                 </div>
 
@@ -310,12 +313,16 @@
             </div>
         </section>
 
-        <!-- Notes Section (NEW) -->
         <section id="notes-section" class="app-section">
             <div class="section-header">
                 <div>
                     <h2>📝 Study Notes</h2>
                     <p class="section-subtitle">AI-generated comprehensive study notes</p>
+                </div>
+                <div class="export-options" id="notes-export-options">
+                    <button class="btn btn-primary" id="export-notes-pdf-btn" disabled><span>📄</span> Export PDF</button>
+                    <button class="btn btn-secondary" id="export-notes-docx-btn" disabled><span>💾</span> Export DOCX</button>
+                    <button class="btn btn-accent" id="export-notes-mp3-btn" disabled><span>🎧</span> Export MP3</button>
                 </div>
             </div>
             <div id="notes-container" class="content-container">
@@ -327,7 +334,6 @@
             </div>
         </section>
 
-        <!-- Q&A Section (NEW) -->
         <section id="qa-section" class="app-section">
             <div class="section-header">
                 <div>
@@ -337,7 +343,7 @@
             </div>
             <div id="qa-container" class="content-container">
                 <div class="qa-input-area">
-                    <textarea id="qa-question" rows="3" placeholder="Ask a question about your uploaded content..." style="width: 100%; padding: 16px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical;"></textarea>
+                    <textarea id="qa-question" rows="3" placeholder="Ask a question about your uploaded content..." class="form-control"></textarea>
                     <button class="btn btn-primary" id="ask-question-btn" style="margin-top: 12px; width: 100%;">
                         <span>❓</span> Ask Question
                     </button>
@@ -352,7 +358,38 @@
             </div>
         </section>
 
-        <!-- Quiz Section (Enhanced) -->
+        <section id="convert-section" class="app-section">
+            <div class="section-header">
+                <div>
+                    <h2>🔄 File Converter</h2>
+                    <p class="section-subtitle">Convert your uploaded content into different file formats.</p>
+                </div>
+            </div>
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
+                <div class="card__body text-center">
+                    <div style="font-size: 64px; margin-bottom: 16px;">💾</div>
+                    <h3 style="margin-bottom: 24px;">Content Conversion</h3>
+                    <p style="color: var(--text-gray); margin-bottom: 32px;">This tool converts the raw text extracted from your uploaded file or the text in the editor into a new format.</p>
+                    
+                    <div class="generate-options" style="flex-direction: column; gap: 16px;">
+                        <button class="btn btn-primary" id="convert-docx-btn">
+                            <span>📝</span> Export to DOCX (Word)
+                        </button>
+                        <button class="btn btn-secondary" id="convert-epub-btn">
+                            <span>📚</span> Export to EPUB
+                        </button>
+                        </button>
+                        <button class="btn btn-accent" id="convert-png-btn">
+                            <span>🖼️</span> Export to PNG/JPEG
+                        </button>
+                        <button class="btn btn-ghost" id="convert-txt-btn">
+                            <span>📄</span> Export to TXT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
         <section id="quiz-section" class="app-section">
             <div id="quiz-start" class="quiz-view active">
                 <div class="quiz-start-card">
@@ -392,8 +429,7 @@
                             </div>
                         </div>
                         <div class="options-container" id="options-container">
-                            <!-- Options will be inserted here -->
-                        </div>
+                            </div>
                     </div>
 
                     <div class="explanation-card hidden" id="explanation-card">
@@ -405,7 +441,7 @@
                         <button class="btn btn-primary" id="next-question-btn">Next Question</button>
                     </div>
 
-                    <div class="quiz-controls">
+                     <div class="quiz-controls">
                         <button class="btn btn-ghost" id="skip-btn">Skip Question</button>
                         <div class="quiz-nav-buttons">
                             <button class="btn btn-primary" id="submit-answer-btn">Submit Answer</button>
@@ -448,7 +484,6 @@
             </div>
         </section>
 
-        <!-- Flashcards Section -->
         <section id="flashcards-section" class="app-section">
             <div id="flashcards-start" class="flashcards-view active">
                 <div class="flashcards-start-card">
@@ -531,7 +566,6 @@
             </div>
         </section>
 
-        <!-- Progress Section -->
         <section id="progress-section" class="app-section">
             <div class="section-header">
                 <div>
@@ -543,8 +577,7 @@
             <div class="badges-section">
                 <h3>🏆 Achievements</h3>
                 <div class="badges-grid" id="badges-grid">
-                    <!-- Badges will be inserted here -->
-                </div>
+                    </div>
             </div>
 
             <div class="history-card" style="margin-top: 32px;">
@@ -557,7 +590,6 @@
             </div>
         </section>
 
-        <!-- Profile Section -->
         <section id="profile-section" class="app-section">
             <div class="section-header">
                 <div>
@@ -567,9 +599,12 @@
             </div>
 
             <div class="profile-header">
-                <div class="profile-avatar">
-                    <span style="font-size: 64px;">👤</span>
+                <div class="profile-avatar" id="profile-avatar-container" style="cursor: pointer;" title="Click to change picture">
+                    <img id="profile-avatar-img" src="" alt="Profile" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: none;">
+                    <span id="profile-avatar-placeholder" style="font-size: 64px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">👤</span>
+                    <input type="file" id="avatar-upload-input" accept="image/*" style="display: none;">
                 </div>
+                
                 <div class="profile-info">
                     <h2 id="profile-name">Guest</h2>
                     <p id="profile-email" style="color: var(--text-gray); margin: 4px 0;">guest@studyhub.com</p>
@@ -619,10 +654,10 @@
                 </div>
             </div>
 
-            <div class="settings-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-top: 32px;">
+            <div class="settings-card">
                 <h3 style="margin-bottom: 20px;">⚙️ Settings</h3>
                 <div class="settings-list">
-                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
+                    <div class="setting-item">
                         <div>
                             <div style="font-weight: 600; margin-bottom: 4px;">🔊 Voice Features</div>
                             <div style="font-size: 14px; color: var(--text-gray);">Enable text-to-speech and voice recognition</div>
@@ -632,7 +667,7 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
+                    <div class="setting-item">
                         <div>
                             <div style="font-weight: 600; margin-bottom: 4px;">🔔 Sound Effects</div>
                             <div style="font-size: 14px; color: var(--text-gray);">Play sounds for achievements and actions</div>
@@ -642,7 +677,7 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                    <div class="setting-item">
                         <div>
                             <div style="font-weight: 600; margin-bottom: 4px;">⏰ Study Reminders</div>
                             <div style="font-size: 14px; color: var(--text-gray);">Get daily study reminders</div>
@@ -660,13 +695,11 @@
         </section>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="loading-spinner"></div>
         <p id="loading-text">Processing...</p>
     </div>
 
-    <!-- Modal -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal" id="modal">
             <div class="modal-header">
@@ -683,15 +716,25 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- JavaScript Files (Load in correct order) -->
     <script src="config.js"></script>
     <script src="state.js"></script>
+    <script src="cloudinary.js"></script>
     <script src="utils.js"></script>
-    <script src="api.js"></script>
+    <script src="gamification.js"></script>
+   
+    <script src="firebaseApi.js"></script>
+    <script src="geminiApi.js"></script>
+    <script src="fileApi.js"></script>
+
     <script src="ui.js"></script>
+    
+    <script src="auth.js"></script>
+    <script src="quiz.js"></script>
+    <script src="flashcards.js"></script>
+    <script src="content.js"></script>
+
     <script src="main.js"></script>
 </body>
 </html>
