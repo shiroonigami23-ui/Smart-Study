@@ -501,7 +501,8 @@ function addEventListeners() {
     document.getElementById('signup-form')?.addEventListener('submit', handleSignup);
     document.getElementById('guest-mode-btn')?.addEventListener('click', handleGuestLogin);
     document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
-
+    document.getElementById('google-login-btn')?.addEventListener('click', handleGoogleLogin);
+    
     document.querySelectorAll('.auth-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             const tabName = tab.dataset.tab;
