@@ -4,46 +4,43 @@
 // ══════════════════════════════════════════════════════════════
 
 /**
+ * Helper function to get Firestore's server timestamp object safely.
+ * NOTE: Defined in firebaseApi.js, declared here for clear dependency.
+ */
+function getServerTimestamp() {
+    if (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
+        return firebase.firestore.FieldValue.serverTimestamp();
+    }
+    // Fallback to a simple ISO string if Firebase is not fully initialized (e.g., in Guest Mode)
+    return new Date().toISOString(); 
+}
+
+/**
  * Uploads an image to Cloudinary using settings from config.js
  * @param {File} imageFile - The image file to upload
  * @param {string} folder - Optional folder name in Cloudinary
  * @returns {Promise<Object>} Upload result with URL and metadata
  */
 async function uploadImageToCloudinary(imageFile, folder = 'study_assistant') {
-    // Get config from config.js
+    // CLOUDINARY_CONFIG is from config.js
     const config = CLOUDINARY_CONFIG;
     
     if (!config || !config.cloudName || !config.uploadPreset) {
         showToast("Cloudinary is not configured. Avatar upload disabled.", "error");
-        console.error("Cloudinary config missing in config.js");
         return null;
     }
     
     const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`;
 
     try {
-        // Validate file type
-        if (!imageFile.type.startsWith('image/')) {
-            throw new Error('File must be an image');
-        }
+        if (!imageFile.type.startsWith('image/')) throw new Error('File must be an image.');
+        if (imageFile.size > 5 * 1024 * 1024) throw new Error('Image size must be less than 5MB.');
 
-        // Validate file size (max 5MB for free tier)
-        if (imageFile.size > 5 * 1024 * 1024) {
-            throw new Error('Image size must be less than 5MB');
-        }
-
-        // Create form data
         const formData = new FormData();
         formData.append('file', imageFile);
         formData.append('upload_preset', config.uploadPreset);
         formData.append('folder', folder);
 
-        // Add timestamp for unique filenames
-        const timestamp = Date.now();
-        const publicId = `${folder}/${timestamp}_${imageFile.name.split('.')[0]}`;
-        formData.append('public_id', publicId);
-
-        // Upload to Cloudinary
         const response = await fetch(CLOUDINARY_UPLOAD_URL, {
             method: 'POST',
             body: formData
@@ -51,13 +48,19 @@ async function uploadImageToCloudinary(imageFile, folder = 'study_assistant') {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error?.message || `Upload failed with status: ${response.status}`);
+            const errorMessage = error.error?.message || `Upload failed with HTTP status: ${response.status}`;
+            console.error('Cloudinary API response error:', errorMessage, error);
+            
+            if (errorMessage.includes('Invalid API key') || errorMessage.includes('unknown api key')) {
+                 throw new Error("Invalid Cloudinary Configuration (Check cloudName/uploadPreset).");
+            }
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
 
         return {
-            url: data.secure_url,  // HTTPS URL
+            url: data.secure_url,
             publicId: data.public_id,
             width: data.width,
             height: data.height,
@@ -67,7 +70,7 @@ async function uploadImageToCloudinary(imageFile, folder = 'study_assistant') {
             createdAt: data.created_at
         };
     } catch (error) {
-        console.error('Cloudinary upload error:', error);
+        console.error('Cloudinary upload execution error:', error);
         throw error;
     }
 }
@@ -81,37 +84,35 @@ async function uploadProfileAvatar(imageFile) {
     try {
         // Upload to Cloudinary
         const result = await uploadImageToCloudinary(imageFile, 'avatars');
-        if (!result) throw new Error("Cloudinary upload returned null");
+        if (!result) throw new Error("Cloudinary upload failed.");
 
         // Save URL to Firestore if user is logged in
         if (appState.currentUser && typeof db !== 'undefined' && db) {
             
-            // CRITICAL FIX: Use simple JS Date object for stability here, 
-            // avoiding potential crashes with serverTimestamp() helper.
+            // FIX: Use simple ISO string to avoid crashing due to Firebase serverTimestamp initialization issues,
+            // which often causes the generic "unknown api key" error.
             await db.collection('users').doc(appState.currentUser.uid).update({
                 avatarUrl: result.url,
-                avatarThumbnail: result.thumbnail,
-                avatarUpdatedAt: new Date().toISOString() // <-- Use ISO string instead of serverTimestamp()
+                avatarThumbnail: result.url,
+                avatarUpdatedAt: new Date().toISOString() 
             });
             
-        } else {
-             console.warn("User logged in but Firestore DB not fully initialized. Profile picture URL not saved to Firestore.");
+        } else if (!appState.currentUser) {
+            // Provide a clear message if user is testing in Guest Mode
+            throw new Error("Login required to save profile picture.");
         }
-
+        
         // Update local state
         appState.userProfile.avatarUrl = result.url;
 
         return result.url;
     } catch (error) {
+        const errorMsg = error.message || 'Image upload failed with an unknown error.';
         console.error('Avatar upload error:', error);
-        // Ensure the specific error message is shown to the user
-        // The error message is likely coming from a Cloudinary response code but mislabeled by the front-end fetch, 
-        // or a security error.
-        showToast(`Profile picture upload failed: ${error.message || 'Unknown API key error.'}`, 'error'); 
+        showToast(`Profile picture upload failed: ${errorMsg}`, 'error'); 
         throw error;
     }
 }
-
 
 /**
  * Gets optimized image URL from Cloudinary with transformations
@@ -132,7 +133,7 @@ function getOptimizedImageUrl(publicId, options = {}) {
         crop = 'fill',
         quality = 'auto',
         format = 'auto',
-        gravity = 'face'
+        gravity = 'face'  // Focus on faces for avatars
     } = options;
 
     const baseUrl = `https://res.cloudinary.com/${config.cloudName}/image/upload`;
@@ -150,21 +151,21 @@ function getOptimizedImageUrl(publicId, options = {}) {
 function getAvatarUrl(avatarUrl, size = 200) {
     const config = CLOUDINARY_CONFIG;
     if (!avatarUrl || !config || !config.cloudName || !avatarUrl.includes('cloudinary.com')) {
-        return avatarUrl;
+        return avatarUrl;  // Return as-is if not Cloudinary URL or not configured
     }
 
     // Extract public ID from URL
     const match = avatarUrl.match(/upload\/(?:v\d+\/)?(.+)$/);
     if (!match) return avatarUrl;
 
-    const publicId = match[1];
-    return getOptimizedImageUrl(publicId, {
-        width: size,
-        height: size,
-        crop: 'fill',
-        quality: 'auto',
-        format: 'auto'
-    });
+    const path = avatarUrl.substring(avatarUrl.indexOf('/upload/') + 8);
+    
+    // Construct the new URL with desired transformations
+    const transformations = `w_${size},h_${size},c_fill,q_auto,f_auto`;
+    const baseUrl = `https://res.cloudinary.com/${config.cloudName}/image/upload`;
+    
+    // Insert transformations right after /upload/
+    return `${baseUrl}/${transformations}/${path}`;
 }
 
 /**
