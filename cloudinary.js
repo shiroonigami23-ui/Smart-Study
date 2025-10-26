@@ -83,15 +83,20 @@ async function uploadProfileAvatar(imageFile) {
         const result = await uploadImageToCloudinary(imageFile, 'avatars');
         if (!result) throw new Error("Cloudinary upload returned null");
 
-        // CRITICAL FIX: Ensure db (global from firebaseApi.js) is initialized
+        // Save URL to Firestore if user is logged in
         if (appState.currentUser && typeof db !== 'undefined' && db) {
+            
+            // CRITICAL FIX: Replace direct Firebase access with the helper function
             await db.collection('users').doc(appState.currentUser.uid).update({
                 avatarUrl: result.url,
                 avatarThumbnail: result.thumbnail,
-                avatarUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                // getServerTimestamp() is defined in firebaseApi.js
+                avatarUpdatedAt: getServerTimestamp() 
             });
+            
         } else {
-             console.warn("User logged in but Firestore DB not initialized. Profile picture URL not saved to Firestore.");
+             // This case should be caught by the login requirement, but acts as a final safeguard
+             console.warn("User logged in but Firestore DB not fully initialized. Profile picture URL not saved to Firestore.");
         }
 
         // Update local state
@@ -100,9 +105,12 @@ async function uploadProfileAvatar(imageFile) {
         return result.url;
     } catch (error) {
         console.error('Avatar upload error:', error);
+        // Ensure the correct error message is shown to the user
+        showToast(`Image upload failed: ${error.message}`, 'error'); 
         throw error;
     }
 }
+
 
 /**
  * Gets optimized image URL from Cloudinary with transformations
