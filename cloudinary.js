@@ -86,16 +86,15 @@ async function uploadProfileAvatar(imageFile) {
         // Save URL to Firestore if user is logged in
         if (appState.currentUser && typeof db !== 'undefined' && db) {
             
-            // CRITICAL FIX: Replace direct Firebase access with the helper function
+            // CRITICAL FIX: Use simple JS Date object for stability here, 
+            // avoiding potential crashes with serverTimestamp() helper.
             await db.collection('users').doc(appState.currentUser.uid).update({
                 avatarUrl: result.url,
                 avatarThumbnail: result.thumbnail,
-                // getServerTimestamp() is defined in firebaseApi.js
-                avatarUpdatedAt: getServerTimestamp() 
+                avatarUpdatedAt: new Date().toISOString() // <-- Use ISO string instead of serverTimestamp()
             });
             
         } else {
-             // This case should be caught by the login requirement, but acts as a final safeguard
              console.warn("User logged in but Firestore DB not fully initialized. Profile picture URL not saved to Firestore.");
         }
 
@@ -105,8 +104,10 @@ async function uploadProfileAvatar(imageFile) {
         return result.url;
     } catch (error) {
         console.error('Avatar upload error:', error);
-        // Ensure the correct error message is shown to the user
-        showToast(`Image upload failed: ${error.message}`, 'error'); 
+        // Ensure the specific error message is shown to the user
+        // The error message is likely coming from a Cloudinary response code but mislabeled by the front-end fetch, 
+        // or a security error.
+        showToast(`Profile picture upload failed: ${error.message || 'Unknown API key error.'}`, 'error'); 
         throw error;
     }
 }
