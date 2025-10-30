@@ -196,7 +196,9 @@ async function handleFileConversion(format) {
             await exportContentToEPUB(content, `${fileName}_converted`); // in fileApi.js
         } else if (format === 'txt') {
              // Simple TXT export
-             await exportContentToTXT(content, `${fileName}_converted`); // in fileApi.js
+            await exportContentToTXT(content, `${fileName}_converted`);
+        } else if (format === 'png' || format === 'jpeg') { //
+            await exportContentToImage(content, `${fileName}_converted`, format);
         } else {
             throw new Error('Unsupported conversion format.');
         }

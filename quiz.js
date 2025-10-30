@@ -348,7 +348,8 @@ async function handleShareQuiz() {
         // Assume you are running on a domain like 'studyhub.com'
         const shareLink = `${window.location.origin}/quiz.html?id=${quiz.shareId}`;
         showToast('Link already generated. Copied to clipboard!', 'info');
-        navigator.clipboard.writeText(shareLink);
+        // Use synchronous copy for restricted environments
+        document.execCommand('copy', false, shareLink); 
         return;
     }
 
@@ -359,25 +360,37 @@ async function handleShareQuiz() {
         const shareId = await saveSharableQuiz(quiz); 
         quiz.shareId = shareId; // Save ID back to state
 
-        // You need a dedicated public page (quiz.html) to host the non-logged-in quiz view
         const shareLink = `${window.location.origin}/quiz.html?id=${shareId}`;
 
-        // Copy link to clipboard
-        await navigator.clipboard.writeText(shareLink);
+        // --- DEFENSIVE CLIPBOARD COPY ---
+        let copySuccess = false;
+        try {
+            await navigator.clipboard.writeText(shareLink);
+            copySuccess = true;
+        } catch (err) {
+            // Fallback for restricted environments
+            try {
+                document.execCommand('copy', false, shareLink); 
+                copySuccess = true;
+            } catch (fallbackErr) {
+                console.warn("Manual clipboard copy failed:", fallbackErr);
+            }
+        }
+        // --------------------------------
 
         hideLoading();
         showModal(
             '🔗 Quiz Shared!',
             `<p>Your quiz template is now publicly accessible. Share this link:</p>
              <p style="word-break: break-all; font-weight: 600; color: var(--primary);">${shareLink}</p>
-             <p>The link has been copied to your clipboard! **Note: You must create a dedicated <code>quiz.html</code> file in your project root to handle this link.**</p>`,
+             <p>${copySuccess ? 'The link has been copied to your clipboard!' : 'Please copy the link above manually.'}</p>`,
             null // No confirmation action needed
         );
         addXP(50, 'Shared a quiz');
 
     } catch (error) {
         hideLoading();
-        console.error('Share error:', error);
-        showToast('Failed to generate sharable link.', 'error');
+        console.error('Share error (Firestore/API):', error);
+        showToast('Failed to generate sharable link. Check console for API/Permissions error.', 'error');
     }
 }

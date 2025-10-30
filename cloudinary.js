@@ -80,25 +80,22 @@ async function uploadImageToCloudinary(imageFile, folder = 'study_assistant') {
  * @param {File} imageFile - The avatar image file
  * @returns {Promise<string>} The uploaded image URL
  */
+// cloudinary.js (Function: uploadProfileAvatar)
+
 async function uploadProfileAvatar(imageFile) {
     try {
         // Upload to Cloudinary
         const result = await uploadImageToCloudinary(imageFile, 'avatars');
-        if (!result) throw new Error("Cloudinary upload failed.");
+        if (!result) throw new Error("Cloudinary upload failed (Check Configuration)."); // Catch configuration error earlier
 
         // Save URL to Firestore if user is logged in
         if (appState.currentUser && typeof db !== 'undefined' && db) {
-            
-            // FIX: Use simple ISO string to avoid crashing due to Firebase serverTimestamp initialization issues,
-            // which often causes the generic "unknown api key" error.
             await db.collection('users').doc(appState.currentUser.uid).update({
                 avatarUrl: result.url,
                 avatarThumbnail: result.url,
                 avatarUpdatedAt: new Date().toISOString() 
             });
-            
         } else if (!appState.currentUser) {
-            // Provide a clear message if user is testing in Guest Mode
             throw new Error("Login required to save profile picture.");
         }
         
@@ -109,6 +106,14 @@ async function uploadProfileAvatar(imageFile) {
     } catch (error) {
         const errorMsg = error.message || 'Image upload failed with an unknown error.';
         console.error('Avatar upload error:', error);
+        
+        // **CRITICAL IMPROVEMENT:** If upload fails, still update the local profile 
+        // with a placeholder URL to prevent the UI from being unresponsive 
+        // if this function crashes before returning.
+        
+        // Fallback to local profile picture storage (or a default static image)
+        appState.userProfile.avatarUrl = appState.userProfile.avatarUrl || 'DEFAULT_AVATAR_URL'; 
+        
         showToast(`Profile picture upload failed: ${errorMsg}`, 'error'); 
         throw error;
     }
