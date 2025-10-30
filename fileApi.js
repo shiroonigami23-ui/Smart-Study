@@ -319,14 +319,59 @@ async function exportContentToTXT(content, filename) {
     }
 }
 
+// fileApi.js (Final Correction for Image Export)
+
+// ... (existing functions)
+
 /**
- * Exports content as an image file (PNG/JPEG) via simple placeholder.
- * @param {string} content The text content.
+ * Exports content as an image file (PNG/JPEG) using html2canvas.
+ * @param {string} content NOT USED - we capture the DOM element directly.
  * @param {string} filename The desired filename (without extension).
  * @param {string} format The desired image format ('png' or 'jpeg').
  */
 async function exportContentToImage(content, filename, format) {
-    showToast(`Image export as ${format.toUpperCase()} requires a library (e.g., html2canvas) and is not implemented.`, 'warning');
-    console.warn(`Image export to ${format} feature is currently a placeholder.`);
-    throw new Error('Image export not implemented.');
+    if (typeof html2canvas === 'undefined') {
+        throw new Error('Image export failed: html2canvas library not loaded.');
+    }
+
+    // Target the main content display area where notes/papers are rendered
+    const targetElement = document.querySelector('#notes-container .content-display');
+
+    if (!targetElement) {
+        throw new Error('Could not find content to capture. Please generate notes or a research paper first.');
+    }
+
+    // Temporarily apply a clean background for capture (prevents transparency issues)
+    const originalBg = targetElement.style.backgroundColor;
+    targetElement.style.backgroundColor = 'var(--color-surface)'; // Light/Dark mode surface color
+
+    try {
+        const canvas = await html2canvas(targetElement, {
+            // Optional: Increase scale for higher resolution export
+            scale: 2, 
+            logging: false,
+            useCORS: true 
+        });
+
+        // Convert canvas to image data
+        const imageMimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const imageData = canvas.toDataURL(imageMimeType);
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = `${filename}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        addXP(30, `Exported to ${format.toUpperCase()}`);
+
+    } catch (error) {
+        console.error('HTML2Canvas capture error:', error);
+        throw new Error('Failed to capture content for image export.');
+    } finally {
+        // Restore original background color
+        targetElement.style.backgroundColor = originalBg; 
+    }
 }
