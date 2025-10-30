@@ -331,3 +331,53 @@ function handleGlobalKeydown(e) {
         }
     }
 }
+
+/**
+ * Saves the current quiz as a sharable session in Firestore and provides a link.
+ */
+async function handleShareQuiz() {
+    const quiz = appState.currentQuiz;
+
+    if (!quiz || quiz.questions.length === 0) {
+        showToast('No active quiz to share.', 'warning');
+        return;
+    }
+    
+    // Check if it's already a shared quiz to avoid duplication
+    if (quiz.shareId) {
+        // Assume you are running on a domain like 'studyhub.com'
+        const shareLink = `${window.location.origin}/quiz.html?id=${quiz.shareId}`;
+        showToast('Link already generated. Copied to clipboard!', 'info');
+        navigator.clipboard.writeText(shareLink);
+        return;
+    }
+
+    showLoading('Generating sharable link...');
+
+    try {
+        // saveSharableQuiz is in firebaseApi.js
+        const shareId = await saveSharableQuiz(quiz); 
+        quiz.shareId = shareId; // Save ID back to state
+
+        // You need a dedicated public page (quiz.html) to host the non-logged-in quiz view
+        const shareLink = `${window.location.origin}/quiz.html?id=${shareId}`;
+
+        // Copy link to clipboard
+        await navigator.clipboard.writeText(shareLink);
+
+        hideLoading();
+        showModal(
+            '🔗 Quiz Shared!',
+            `<p>Your quiz template is now publicly accessible. Share this link:</p>
+             <p style="word-break: break-all; font-weight: 600; color: var(--primary);">${shareLink}</p>
+             <p>The link has been copied to your clipboard! **Note: You must create a dedicated <code>quiz.html</code> file in your project root to handle this link.**</p>`,
+            null // No confirmation action needed
+        );
+        addXP(50, 'Shared a quiz');
+
+    } catch (error) {
+        hideLoading();
+        console.error('Share error:', error);
+        showToast('Failed to generate sharable link.', 'error');
+    }
+}

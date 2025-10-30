@@ -8,7 +8,7 @@
 quizTimer = null; 
 
 // ====================================
-// CORE INITIALIZATION LOGIC (CRITICAL FIX: DEFINING initializeApp)
+// CORE INITIALIZATION LOGIC
 // ====================================
 
 /**
@@ -41,7 +41,7 @@ function initializeApp() {
         }, 500);
 
         // Function from ui.js
-        addRecentActivity('🎓', 'Welcome! Start by uploading study materials or try a sample quiz.', 'Just now');
+        addRecentActivity('🎉', 'Welcome! Start by uploading study materials or try a sample quiz.', 'Just now');
 
         console.log("initializeApp: Finished successfully.");
     } catch (error) {
@@ -52,7 +52,7 @@ function initializeApp() {
 }
 
 // ====================================
-// PROFILE LOGIC (New handlers for image upload)
+// PROFILE LOGIC
 // ====================================
 
 /**
@@ -81,7 +81,7 @@ async function handleAvatarUpload() {
 
         hideLoading(); // from utils.js
         showToast('Profile picture updated!', 'success'); // from utils.js
-        addRecentActivity('👤', 'Updated profile picture', 'Just now'); // from ui.js
+        addRecentActivity('📸', 'Updated profile picture', 'Just now'); // from ui.js
     } catch (error) {
         hideLoading(); // from utils.js
         console.error("Avatar upload failed:", error);
@@ -90,38 +90,62 @@ async function handleAvatarUpload() {
 }
 
 // ====================================
-// EXPORT/DOWNLOAD LOGIC (New Feature Handlers)
+// EXPORT/DOWNLOAD LOGIC
 // ====================================
 
 /**
  * Exports the current generated notes or summary to the specified format.
- * @param {string} format 'pdf', 'docx', or 'wav' (changed from mp3 due to technical limitation)
- * @param {string} type 'notes' or 'summary'
+ * @param {string} format 'pdf', 'docx', 'epub', or 'wav'
+ * @param {string} type 'notes', 'summary', or 'research_paper'
  */
 async function handleExport(format, type) {
-    const content = type === 'notes' ? appState.generatedNotes : appState.generatedSummary;
-    // CRITICAL FIX: Ensure content is plain text before passing to export functions
-    const contentText = content ? (content.replace(/<br>/g, '\n').trim() || '') : null;
-    
-    const title = type === 'notes' ? 'Study_Notes' : 'Content_Summary';
+    let content = null;
+    let title = 'Exported_Content';
 
-    if (!contentText) {
-        showToast(`No generated ${type} content to export.`, 'warning'); // from utils.js
+    if (type === 'notes') {
+        content = appState.generatedNotes;
+        title = 'Study_Notes';
+    } else if (type === 'summary') {
+        content = appState.generatedSummary;
+        title = 'Content_Summary';
+    } else if (type === 'research_paper') { 
+        content = appState.generatedResearchPaper;
+        title = 'Research_Paper_Outline';
+    }
+    
+    if (!content) {
+        showToast(`No generated ${type} content to export.`, 'warning');
         return;
     }
+      
+    // --- CRITICAL FIX: Robustly strip all HTML/Markdown for PDF/DOCX ---
+    let contentText = content; 
+    
+    // Step 1: Replace <br> with newlines (important for readability)
+    contentText = contentText.replace(/<br>/g, '\n');
+
+    // Step 2: Use a temporary DOM element to strip all remaining HTML tags (<h1>, <strong>, etc.)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = contentText;
+    contentText = tempDiv.textContent || tempDiv.innerText || ''; // Extract pure text
+
+    if (!contentText.trim()) {
+        showToast(`Export failed: Content is empty after cleaning.`, 'error');
+        return;
+    }
+    // -----------------------------------------------------------------
 
     showLoading(`Preparing ${format.toUpperCase()} download...`); // from utils.js
-
+    
     try {
         if (format === 'pdf') {
-            // exportContentToPDF is in fileApi.js
-            await exportContentToPDF(contentText, title);
+            await exportContentToPDF(contentText, title); // in fileApi.js
         } else if (format === 'docx') {
-            // exportContentToDOCX is in fileApi.js
-            await exportContentToDOCX(contentText, title);
+            await exportContentToDOCX(contentText, title); // in fileApi.js
+        } else if (format === 'epub') { 
+            // EPUB re-wraps the text, so the clean text works perfectly fine
+            await exportContentToEPUB(contentText, title); // in fileApi.js
         } else if (format === 'wav') {
-            // exportContentToWAV is in fileApi.js
-            // MP3 is not possible client-side, using WAV placeholder
             await exportContentToWAV(contentText, title); 
         }
         
@@ -136,7 +160,6 @@ async function handleExport(format, type) {
         showToast(`Export failed: ${error.message}. Try refreshing the page.`, 'error'); // from utils.js
     }
 }
-
 // ====================================
 // EVENT LISTENER ATTACHMENT (The Orchestrator)
 // ====================================
@@ -274,19 +297,37 @@ function addEventListeners() {
         document.getElementById('avatar-upload-input').click();
     });
     document.getElementById('avatar-upload-input')?.addEventListener('change', handleAvatarUpload);
+    
 
     // --- Export Buttons (Using the main export handler) ---
-    document.getElementById('export-notes-pdf-btn')?.addEventListener('click', () => handleExport('pdf', 'notes'));
-    document.getElementById('export-notes-docx-btn')?.addEventListener('click', () => handleExport('docx', 'notes'));
+    // The type is used to determine which appState variable to pull content from.
+    document.getElementById('export-notes-pdf-btn')?.addEventListener('click', () => {
+        const type = appState.generatedResearchPaper ? 'research_paper' : 'notes';
+        handleExport('pdf', type);
+    });
+    document.getElementById('export-notes-docx-btn')?.addEventListener('click', () => {
+        const type = appState.generatedResearchPaper ? 'research_paper' : 'notes';
+        handleExport('docx', type);
+    });
+    document.getElementById('export-notes-epub-btn')?.addEventListener('click', () => {
+        const type = appState.generatedResearchPaper ? 'research_paper' : 'notes';
+        handleExport('epub', type);
+    });
+
+    // The MP3 button now needs to check for Research Paper content too
     document.getElementById('export-notes-mp3-btn')?.addEventListener('click', () => {
-        if (appState.generatedNotes) {
-            showToast('Reading notes aloud...');
+        const content = appState.generatedResearchPaper || appState.generatedNotes;
+        if (content) {
+            showToast('Reading content aloud...');
             // speak() is in utils.js
-            speak(appState.generatedNotes.substring(0, 2500)); // Speak first 2500 chars
+            speak(content.substring(0, 2500)); // Speak first 2500 chars
         } else {
-            showToast('Generate notes first!', 'warning');
+            showToast('Generate notes or a research paper first!', 'warning');
         }
     }); 
+    
+    // --- Quiz Share Listener ---
+    document.getElementById('share-quiz-btn')?.addEventListener('click', handleShareQuiz); 
 
 
     // --- Profile Settings ---
@@ -310,6 +351,7 @@ function addEventListeners() {
     // CRITICAL: Ensure this is attached last
     document.addEventListener('keydown', handleGlobalKeydown);
 }
+
 
 // ====================================
 // APPLICATION ENTRY POINT
@@ -347,5 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('auth'); // from ui.js
     }
     
+    // This closing parenthesis and semicolon are crucial for avoiding the syntax error
     console.log('%c🎓 Smart Study Assistant Loaded!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
 });

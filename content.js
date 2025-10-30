@@ -142,6 +142,11 @@ async function generateContent(type) {
             addXP(30, 'Generated summary'); // from gamification.js
         }  else if (type === 'research_paper') { // <--- ADD RESEARCH PAPER LOGIC
             const paper = await generateResearchPaperOutline(content, subject || 'General');
+            if (!paper) {
+            hideLoading();
+            showToast('AI failed to generate a response. Please adjust content and try again.', 'error');
+            return;
+        }
             appState.generatedResearchPaper = paper; // Store for display/export
             hideLoading(); 
             showToast('Research paper outline generated successfully!', 'success'); 

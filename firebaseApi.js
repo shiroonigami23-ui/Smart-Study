@@ -315,3 +315,31 @@ async function saveUserProfileToFirestore() {
 
     await saveToFirestore('users', appState.currentUser.uid, profileData);
 }
+
+/**
+ * Saves a quiz session for sharing and returns a unique ID.
+ * The session includes questions and the option to submit answers.
+ * @param {object} quizSession The quiz object to save (questions, subject, difficulty).
+ * @returns {Promise<string>} The unique ID (document ID) for the shared quiz.
+ */
+async function saveSharableQuiz(quizSession) {
+    if (!db) throw new Error("Firestore not initialized.");
+
+    try {
+        const sharableData = {
+            subject: quizSession.subject,
+            difficulty: quizSession.difficulty,
+            questions: quizSession.questions,
+            createdAt: getServerTimestamp(),
+            // Ensure no user-specific answers are saved, only the quiz template
+        };
+
+        const docRef = await db.collection('sharedQuizzes').add(sharableData);
+        console.log("Sharable quiz saved with ID:", docRef.id);
+        return docRef.id;
+
+    } catch (error) {
+        console.error('Error saving sharable quiz:', error);
+        throw new Error('Failed to create sharable quiz link.');
+    }
+}

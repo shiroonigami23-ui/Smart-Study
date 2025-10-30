@@ -336,6 +336,14 @@ function displayQuizResults() {
         if (resultsTitle) resultsTitle.textContent = 'Keep Learning!';
         if (scoreText) scoreText.textContent = 'Review the material and try again.';
     }
+    const resultsActions = document.querySelector('#quiz-results .results-actions');
+    if (resultsActions && !document.getElementById('share-quiz-btn')) {
+         const shareButton = document.createElement('button');
+         shareButton.className = 'btn btn-secondary btn-block';
+         shareButton.id = 'share-quiz-btn';
+         shareButton.innerHTML = '<span>🔗</span> Share Quiz Session';
+         resultsActions.appendChild(shareButton);
+    }
 }
 
 // ====================================
@@ -554,6 +562,7 @@ function displayGeneratedNotes(notes) {
     // Enable export buttons
     document.getElementById('export-notes-pdf-btn').disabled = false;
     document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-epub-btn').disabled = false;
     document.getElementById('export-notes-mp3-btn').disabled = false;
 }
 
@@ -599,6 +608,7 @@ function displayGeneratedResearchPaper(paper) {
     // Enable export buttons (The same ones used for notes)
     document.getElementById('export-notes-pdf-btn').disabled = false;
     document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-epub-btn').disabled = false;
     document.getElementById('export-notes-mp3-btn').disabled = false;
 }
 

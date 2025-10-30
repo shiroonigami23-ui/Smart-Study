@@ -29,9 +29,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
     
 
 </head>
@@ -325,6 +323,7 @@
                 <div class="export-options" id="notes-export-options">
                     <button class="btn btn-primary" id="export-notes-pdf-btn" disabled><span>📄</span> Export PDF</button>
                     <button class="btn btn-secondary" id="export-notes-docx-btn" disabled><span>💾</span> Export DOCX</button>
+                    <button class="btn btn-success" id="export-notes-epub-btn" disabled><span>📚</span> Export EPUB</button> 
                     <button class="btn btn-accent" id="export-notes-mp3-btn" disabled><span>🎧</span> Export MP3</button>
                 </div>
             </div>
@@ -408,7 +407,7 @@
                     <button class="btn btn-primary btn-large btn-block" id="start-quiz-btn">Start Quiz</button>
                     <button class="btn btn-ghost btn-block" id="use-sample-quiz-btn">Use Sample Quiz</button>
                 </div>
-            </div>
+ </div>
 
             <div id="quiz-taking" class="quiz-view">
                 <div class="quiz-header">
