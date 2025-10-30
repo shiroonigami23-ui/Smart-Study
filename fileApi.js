@@ -319,10 +319,6 @@ async function exportContentToTXT(content, filename) {
     }
 }
 
-// fileApi.js (Final Correction for Image Export)
-
-// ... (existing functions)
-
 /**
  * Exports content as an image file (PNG/JPEG) using html2canvas.
  * @param {string} content NOT USED - we capture the DOM element directly.
@@ -341,29 +337,43 @@ async function exportContentToImage(content, filename, format) {
         throw new Error('Could not find content to capture. Please generate notes or a research paper first.');
     }
 
+    showLoading('Capturing content for image export...');
+    
     // Temporarily apply a clean background for capture (prevents transparency issues)
     const originalBg = targetElement.style.backgroundColor;
     targetElement.style.backgroundColor = 'var(--color-surface)'; // Light/Dark mode surface color
 
     try {
         const canvas = await html2canvas(targetElement, {
-            // Optional: Increase scale for higher resolution export
+            // Increase scale for higher resolution export
             scale: 2, 
             logging: false,
+            // UseCORS is often needed if the background image uses a different domain (like Cloudinary)
             useCORS: true 
         });
 
-        // Convert canvas to image data
         const imageMimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-        const imageData = canvas.toDataURL(imageMimeType);
 
-        // Trigger download
+        // --- RELIABLE DOWNLOAD FIX: Use Blob instead of direct DataURL ---
+        
+        // 1. Convert the canvas to a Blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, imageMimeType));
+        
+        // 2. Create a temporary URL for the Blob
+        const url = URL.createObjectURL(blob);
+
+        // 3. Trigger download link
         const link = document.createElement('a');
-        link.href = imageData;
+        link.href = url;
         link.download = `${filename}.${format}`;
+        
+        // CRITICAL: Ensure link click is immediately executed
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        // Revoke the temporary URL after download
+        URL.revokeObjectURL(url);
         
         addXP(30, `Exported to ${format.toUpperCase()}`);
 
@@ -372,6 +382,6 @@ async function exportContentToImage(content, filename, format) {
         throw new Error('Failed to capture content for image export.');
     } finally {
         // Restore original background color
-        targetElement.style.backgroundColor = originalBg; 
+        targetElement.style.backgroundColor = originalBg;
     }
 }
