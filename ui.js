@@ -571,6 +571,36 @@ function displayGeneratedSummary(summary) {
     const modalContent = `<div style="line-height: 1.8;">${formattedSummary}</div>`;
     showModal('📄 Content Summary', modalContent);
 }
+/**
+ * Displays generated research paper outline in the notes section.
+ * @param {string} paper The generated paper content.
+ */
+function displayGeneratedResearchPaper(paper) {
+    const notesContainer = document.getElementById('notes-container');
+    if (!notesContainer) return;
+    
+    // Simple markdown to HTML conversion for basic formatting
+    const formattedPaper = paper
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+        .replace(/^(#+)\s*(.*)/gm, (match, hashes, content) => { // Headings
+            // H1 for Title, H2 for Abstract/Intro/Outline, H3 for Sub-sections
+            const level = hashes.length > 3 ? 3 : hashes.length;
+            return `<h${level}>${content}</h${level}>`;
+        })
+        .replace(/\n/g, '<br>'); // Newlines to <br>
+
+    notesContainer.innerHTML = `
+        <div class="content-display">
+            <h2 style="margin-bottom: 24px;">📚 Generated Research Paper Outline</h2>
+            <div style="font-size: 15px;">${formattedPaper}</div>
+        </div>
+    `;
+    
+    // Enable export buttons (The same ones used for notes)
+    document.getElementById('export-notes-pdf-btn').disabled = false;
+    document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-mp3-btn').disabled = false;
+}
 
 /**
  * Adds a Q&A exchange to the history.

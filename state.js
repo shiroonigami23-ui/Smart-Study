@@ -36,5 +36,6 @@ const appState = {
     flashcardHistory: [],
     generatedNotes: null,
     generatedSummary: null,
+    generatedResearchPaper: null,
     qaHistory: []
 };

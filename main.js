@@ -234,6 +234,7 @@ function addEventListeners() {
     document.getElementById('generate-flashcards-btn')?.addEventListener('click', () => generateContent('flashcards'));
     document.getElementById('generate-notes-btn')?.addEventListener('click', () => generateContent('notes'));
     document.getElementById('generate-summary-btn')?.addEventListener('click', () => generateContent('summary'));
+    document.getElementById('generate-research-paper-btn')?.addEventListener('click', () => generateContent('research_paper'));
     document.getElementById('convert-docx-btn')?.addEventListener('click', () => handleFileConversion('docx'));
     document.getElementById('convert-epub-btn')?.addEventListener('click', () => handleFileConversion('epub'));
     document.getElementById('convert-txt-btn')?.addEventListener('click', () => handleFileConversion('txt'));

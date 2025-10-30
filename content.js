@@ -140,6 +140,15 @@ async function generateContent(type) {
             addRecentActivity('📄', 'Generated content summary', 'Just now'); 
             displayGeneratedSummary(summary); // from ui.js (uses modal)
             addXP(30, 'Generated summary'); // from gamification.js
+        }  else if (type === 'research_paper') { // <--- ADD RESEARCH PAPER LOGIC
+            const paper = await generateResearchPaperOutline(content, subject || 'General');
+            appState.generatedResearchPaper = paper; // Store for display/export
+            hideLoading(); 
+            showToast('Research paper outline generated successfully!', 'success'); 
+            addRecentActivity('📚', 'Generated research paper outline', 'Just now'); 
+            displayGeneratedResearchPaper(paper); // from ui.js
+            navigateToSection('notes'); // Display in the Notes section
+            addXP(75, 'Generated research paper outline'); // More XP for a larger task
         }
 
         // Save to Firestore (function in firebaseApi.js)

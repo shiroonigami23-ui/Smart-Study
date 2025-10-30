@@ -365,6 +365,38 @@ Generate detailed study notes now:`;
     return response;
 }
 
+
+/**
+ * Generates a research paper structure/draft from content using the Gemini API.
+ * @param {string} content The source content.
+ * @param {string} subject The subject/category of the paper.
+ * @returns {Promise<string>} The generated paper outline/draft.
+ */
+async function generateResearchPaperOutline(content, subject) {
+    const prompt = `Based on the following source content related to the subject **'${subject}'**, generate a comprehensive, highly authentic research paper draft. 
+    
+    The final output must be formatted with a **formal, authoritative, and sophisticated tone** suitable for an academic journal, with a strong focus on generating **genuine-looking, detailed elements** to mimic publishable quality.
+
+    **CRITICAL STRUCTURE & AUTHENTICITY REQUIREMENTS:**
+    
+    1.  **Title**: A compelling, academic title that uses formal technical language.
+    2.  **Authorship**: Generate realistic, common English names for **three researchers** (e.g., Dr. A. P. Smith, J. R. Doe) and assign them to a fictional university or lab. Format this as a byline immediately below the title.
+    3.  **Abstract**: A concise (150-200 words), scientific summary of the paper's theoretical model, key methods (simulated), and primary findings.
+    4.  **Keywords**: Generate 5-7 relevant academic keywords.
+    5.  **Introduction**: A detailed draft introduction (approx 400 words) that firmly establishes the research problem, reviews the current (simulated) literature, and presents a **clear, testable thesis statement**.
+    6.  **Methods (Simulated)**: Generate a detailed, realistic **outline** for a "Methods" section, including subsections for (simulated) *Data Collection*, *Experimental Design*, and *Analytical Approach*. Use technical terminology.
+    7.  **Results (Simulated)**: Generate a detailed, realistic **outline** for a "Results" section, including subsections that describe **hypothetical, complex findings (data that does not exist)** that support the thesis. The findings must use specific, simulated statistics and terms (e.g., "The calculated p-value of 0.015 suggests statistical significance..." or "A 15% increase in variable X was observed...").
+    8.  **Discussion/Conclusion (Outline)**: Generate an outline that discusses the implications of the simulated results and suggests future research directions.
+    9.  **References**: Generate a list of **three highly realistic, fictional paper titles and authors** that would naturally be cited in this field (use a standard citation format like APA or MLA).
+    
+    Content: ${content}
+    
+    Generate the complete draft research paper (Title through References) now, ensuring the tone is strictly professional and academic:`;
+
+    const response = await callGeminiAPI(prompt);
+}
+
+    
 /**
  * Generates a concise summary from content.
  * @param {string} content The source content.
