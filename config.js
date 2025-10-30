@@ -18,7 +18,7 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 
 // Cloudinary Configuration
 const CLOUDINARY_CONFIG = {
-    cloudName: 'drml250ku',
+    cloudName: 'dbqr0rgq1',
     uploadPreset: 'study_assistant'
 };
 
