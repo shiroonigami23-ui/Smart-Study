@@ -341,15 +341,21 @@ async function exportContentToImage(content, filename, format) {
     
     // Temporarily apply a clean background for capture (prevents transparency issues)
     const originalBg = targetElement.style.backgroundColor;
-    targetElement.style.backgroundColor = 'var(--color-surface)'; // Light/Dark mode surface color
+    targetElement.style.backgroundColor = 'var(--color-surface)';
 
     try {
         const canvas = await html2canvas(targetElement, {
-            // Increase scale for higher resolution export
             scale: 2, 
             logging: false,
-            // UseCORS is often needed if the background image uses a different domain (like Cloudinary)
-            useCORS: true 
+            // --- HYPER-DEFENSIVE CONFIGURATION ---
+            useCORS: false, 
+            allowTaint: false, 
+            // Use current scroll position to ensure capture starts from top-left
+            scrollX: -window.scrollX, 
+            scrollY: -window.scrollY,
+            windowWidth: targetElement.scrollWidth,
+            windowHeight: targetElement.scrollHeight
+            // -------------------------------------
         });
 
         const imageMimeType = format === 'png' ? 'image/png' : 'image/jpeg';
