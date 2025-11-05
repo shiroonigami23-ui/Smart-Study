@@ -37,5 +37,6 @@ const appState = {
     generatedNotes: null,
     generatedSummary: null,
     generatedResearchPaper: null,
+    generatedProjectFile: null,
     qaHistory: []
 };

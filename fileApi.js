@@ -141,12 +141,15 @@ async function extractTextFromEPUB(file) {
 // NEW: DOCUMENT EXPORT FUNCTIONS 
 // ====================================
 
+// fileApi.js (REPLACE exportContentToPDF function)
+
 /**
- * Exports text content to a PDF file using jsPDF.
+ * Exports text content to a PDF file using jsPDF, now handling page breaks, numbering, and image embedding for project files.
  * @param {string} content The text content to export.
  * @param {string} filename The desired filename (without extension).
+ * @param {boolean} isProjectFile Flag to enable custom formatting (TOC, page breaks, images).
  */
-function exportContentToPDF(content, filename) {
+function exportContentToPDF(content, filename, isProjectFile = false) {
     if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         showToast('Error: jsPDF library not loaded for PDF export.', 'error');
         return;
@@ -154,10 +157,94 @@ function exportContentToPDF(content, filename) {
 
     try {
         const doc = new window.jspdf.jsPDF();
-        const lines = doc.splitTextToSize(content, 180);
+        let yPos = 10; // Starting Y position
+        let pageNumber = 1;
+        const margin = 10;
+        const pageHeight = doc.internal.pageSize.height;
+        const lineHeight = 5; // Fixed line height for simple calculation
+        const maxWidth = 190;
+        const fontSize = 12;
 
-        doc.setFontSize(12);
-        doc.text(lines, 10, 10);
+        doc.setFontSize(fontSize);
+
+        // Function to add a footer
+        const addFooter = (pageNo) => {
+            const footerText = isProjectFile ? `Page ${pageNo}` : `Exported by Study Hub | Page ${pageNo}`;
+            doc.setFontSize(10);
+            doc.text(footerText, doc.internal.pageSize.width - margin, pageHeight - 5, { align: 'right' });
+            doc.setFontSize(fontSize); // Reset font size
+        };
+        
+        // Function to manage page breaks and content
+        const addNewPage = () => {
+            if (pageNumber > 0) {
+                 addFooter(pageNumber); // Add footer to the finished page
+            }
+            doc.addPage();
+            pageNumber++;
+            yPos = margin; // Reset Y position
+        };
+
+        const contentBlocks = content.split('\n'); // Split by newline for simple text rendering
+        
+        // Image marker pattern: <<<IMAGE_type_base64>>>
+        const imageMarkerRegex = /<<<IMAGE_(\w+)_([A-Za-z0-9+/=]+)>>>/;
+
+        for (const block of contentBlocks) {
+            let currentLine = block;
+
+            // 1. Check for page break marker
+            if (isProjectFile && currentLine.includes('<<<PAGEBREAK>>>')) {
+                addNewPage();
+                continue;
+            }
+
+            // 2. Check for image marker
+            const imageMatch = currentLine.match(imageMarkerRegex);
+            if (isProjectFile && imageMatch) {
+                // If the entire block is an image marker, process it
+                if (currentLine.trim() === imageMatch[0]) {
+                    const imgType = imageMatch[1].toUpperCase();
+                    const base64Data = imageMatch[2];
+                    const dataUrl = `data:image/${imgType.toLowerCase()};base64,${base64Data}`;
+                    
+                    // Estimate image size (assume 80% width for layout)
+                    const imgWidth = 150; 
+                    const imgHeight = 100; // Fixed size estimate for placement
+                    
+                    if (yPos + imgHeight + lineHeight > pageHeight - margin) {
+                        addNewPage();
+                    }
+                    
+                    try {
+                         doc.addImage(dataUrl, imgType, margin + 20, yPos, imgWidth, imgHeight);
+                         yPos += imgHeight + lineHeight; // Advance position past the image
+                    } catch (imgError) {
+                        console.error("jsPDF Image Embedding Failed:", imgError);
+                        // Fallback: print a text error
+                        doc.text(`[Error: Failed to embed image of type ${imgType}]`, margin, yPos);
+                        yPos += lineHeight * 2;
+                    }
+                    continue; // Done with this block
+                }
+            }
+
+            // 3. Process text lines (word wrap)
+            const wrappedLines = doc.splitTextToSize(currentLine, maxWidth);
+
+            for (const wrappedLine of wrappedLines) {
+                if (yPos + lineHeight > pageHeight - margin) {
+                    addNewPage();
+                }
+
+                doc.text(wrappedLine, margin, yPos);
+                yPos += lineHeight;
+            }
+        }
+        
+        // Add footer to the last page
+        addFooter(pageNumber);
+
         doc.save(`${filename}.pdf`);
 
         showToast('PDF exported successfully!', 'success');
@@ -167,6 +254,8 @@ function exportContentToPDF(content, filename) {
         showToast('Error exporting to PDF.', 'error');
     }
 }
+
+
 
 /**
  * Exports text content to a DOCX (Word) file using a simple Blob download.

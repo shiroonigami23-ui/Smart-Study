@@ -99,7 +99,6 @@ async function handleGoogleLogin() {
  */
 function handleGuestLogin() {
     console.log("handleGuestLogin: Starting guest login...");
-
     // Reset relevant state for guest mode
     appState.userProfile.name = 'Guest';
     appState.userProfile.email = '';

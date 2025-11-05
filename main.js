@@ -93,6 +93,8 @@ async function handleAvatarUpload() {
 // EXPORT/DOWNLOAD LOGIC
 // ====================================
 
+// main.js (REPLACE handleExport function)
+
 /**
  * Exports the current generated notes or summary to the specified format.
  * @param {string} format 'pdf', 'docx', 'epub', or 'wav'
@@ -102,7 +104,19 @@ async function handleExport(format, type) {
     let content = null;
     let title = 'Exported_Content';
 
-    if (type === 'notes') {
+    // 1. Determine which content to export and get the title
+    const isProjectFile = !!appState.generatedProjectFile;
+    if (isProjectFile) {
+        const projectContentDiv = document.getElementById('project-file-content');
+        if (projectContentDiv) {
+            content = projectContentDiv.innerHTML;
+            const h1Match = content.match(/<h1.*?>(.*?)<\/h1>/i);
+            title = h1Match ? h1Match[1].replace(/<br>/g, ' ').trim() : 'Project_File_Export';
+        } else {
+             content = appState.generatedProjectFile;
+             title = 'Project_File';
+        }
+    } else if (type === 'notes') {
         content = appState.generatedNotes;
         title = 'Study_Notes';
     } else if (type === 'summary') {
@@ -114,52 +128,185 @@ async function handleExport(format, type) {
     }
     
     if (!content) {
-        showToast(`No generated ${type} content to export.`, 'warning');
+        showToast(`No content to export.`, 'warning');
         return;
     }
       
-    // --- CRITICAL FIX: Robustly strip all HTML/Markdown for PDF/DOCX ---
-    let contentText = content; 
-    
-    // Step 1: Replace <br> with newlines (important for readability)
-    contentText = contentText.replace(/<br>/g, '\n');
+    showLoading(`Preparing ${format.toUpperCase()} download...`); 
 
-    // Step 2: Use a temporary DOM element to strip all remaining HTML tags (<h1>, <strong>, etc.)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = contentText;
-    contentText = tempDiv.textContent || tempDiv.innerText || ''; // Extract pure text
-
-    if (!contentText.trim()) {
-        showToast(`Export failed: Content is empty after cleaning.`, 'error');
-        return;
-    }
-    // -----------------------------------------------------------------
-
-    showLoading(`Preparing ${format.toUpperCase()} download...`); // from utils.js
-    
     try {
-        if (format === 'pdf') {
-            await exportContentToPDF(contentText, title); // in fileApi.js
-        } else if (format === 'docx') {
-            await exportContentToDOCX(contentText, title); // in fileApi.js
-        } else if (format === 'epub') { 
-            // EPUB re-wraps the text, so the clean text works perfectly fine
-            await exportContentToEPUB(contentText, title); // in fileApi.js
-        } else if (format === 'wav') {
-            await exportContentToWAV(contentText, title); 
+        // 2. CRITICAL FIX: Robustly strip all UI-specific elements & pre-process for export
+        let contentText = content; 
+        
+        // Step A: Convert the live HTML (with user edits) into a temporary DOM
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = contentText;
+
+        // Step B: Clean the DOM (Remove UI, fix content)
+        tempDiv.querySelector('h2[style*="Generated Project File Outline"]')?.remove();
+        tempDiv.querySelectorAll('.image-upload-zone').forEach(el => el.remove());
+        
+        tempDiv.querySelectorAll('.user-editable-input').forEach(el => {
+            if (el.textContent.includes('[USER INPUT:')) {
+                el.textContent = ' '; 
+            }
+            // Unwrap the content from the styling div
+            const textNode = document.createTextNode(el.textContent.trim());
+            el.parentNode.replaceChild(textNode, el);
+        });
+
+        // 3. PROJECT FILE ENHANCEMENT (TOC and Pagination Logic)
+        if (isProjectFile) {
+            const headingElements = Array.from(tempDiv.querySelectorAll('h3, h2, h1'));
+            let tocItems = [];
+            
+            // Generate TOC structure and replace placeholders
+            headingElements.forEach((h) => {
+                if (h.textContent.includes('PAGE BREAK')) return;
+                const level = parseInt(h.tagName.substring(1));
+                tocItems.push({ level, text: h.textContent.trim(), page: '{{PAGENO}}' });
+            });
+
+            // Reconstruct content, adding in the final TOC and manual pagination markers
+            const htmlString = tempDiv.innerHTML;
+            
+            // Replaces the TOC placeholder with the generated list (for HTML preview fallback/text extraction)
+            let tocHtml = tocItems.map(item => {
+                const indent = item.level * 10; 
+                return `<li style="margin-left: ${indent}px; font-size: 14px;">${item.text}</li>`;
+            }).join('');
+            tocHtml = `<h2>Table of Contents</h2><ul>${tocHtml}</ul>`;
+
+            let contentWithPageBreaks = htmlString.replace(/\[TOC PLACEHOLDER.*?\]/, tocHtml);
+
+            // Re-wrap the content in a new temp div for final text extraction
+            const finalTempDiv = document.createElement('div');
+            finalTempDiv.innerHTML = contentWithPageBreaks;
+            
+            // Final Text Extraction (now including TOC and image markers if PDF)
+            contentText = finalTempDiv.textContent || finalTempDiv.innerText || ''; 
+            
+            // Replace the AI's page break marker with our function-specific one.
+            contentText = contentText.replace(/--- PAGE BREAK \(For PDF Export\) ---/gi, '<<<PAGEBREAK>>>');
+        } else {
+             // For standard notes/summary, just get the pure text from the cleaned tempDiv
+             contentText = tempDiv.textContent || tempDiv.innerText || '';
+        }
+
+        if (!contentText.trim()) {
+            throw new Error(`Content is empty after cleaning.`);
         }
         
-        hideLoading(); // from utils.js
-        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully as ${format.toUpperCase()}!`, 'success'); // from utils.js
-        addRecentActivity('💾', `Exported ${type} to ${format.toUpperCase()}`, 'Just now'); // from ui.js
-        addXP(25, 'Exported content'); // from gamification.js
+        
+        // 4. Call Export Functions
+        if (format === 'pdf') {
+            // CRITICAL: PDF now needs the special contentText with page breaks.
+            await exportContentToPDF(contentText, title, isProjectFile); // Pass flag
+        } else if (format === 'docx') {
+            await exportContentToDOCX(contentText, title); 
+        } else if (format === 'epub') { 
+            await exportContentToEPUB(contentText, title); 
+        } else if (format === 'wav') {
+            await exportContentToWAV(contentText, title); 
+        } else if (format === 'png' || format === 'jpeg') {
+            const contentForImage = document.getElementById('project-file-content') || tempDiv;
+            await exportContentToImage(contentForImage.outerHTML, title, format);
+        }
+        
+        hideLoading(); 
+        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully as ${format.toUpperCase()}!`, 'success'); 
+        addRecentActivity('📁', `Exported ${type} to ${format.toUpperCase()}`, 'Just now'); 
+        addXP(25, 'Exported content'); 
 
     } catch (error) {
-        hideLoading(); // from utils.js
+        hideLoading(); 
         console.error(`Export to ${format} failed:`, error);
-        showToast(`Export failed: ${error.message}. Try refreshing the page.`, 'error'); // from utils.js
+        showToast(`Export failed: ${error.message}. Try reviewing content.`, 'error'); 
     }
 }
+
+
+
+// main.js (REPLACE handleProjectImageUpload function)
+
+/**
+ * Handles image upload for a specific placeholder in the generated project file.
+ * @param {File} file The file object (click or drop).
+ * @param {string} targetId The ID of the placeholder div to replace.
+ */
+async function handleProjectImageUpload(file, targetId) {
+    const placeholderDiv = document.getElementById(targetId);
+    if (!placeholderDiv) return;
+
+    showLoading('Inserting image...');
+
+    try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result; // This is the Base64 Data URL
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.display = 'block';
+            img.style.margin = '20px auto';
+            img.style.borderRadius = '8px';
+            img.style.border = '2px dashed var(--warning)';
+            img.style.padding = '5px';
+            
+            // CRITICAL FIX: Add a class for identification and store Base64/type for PDF export
+            img.classList.add('project-embedded-image');
+            img.setAttribute('data-image-type', file.type);
+            img.setAttribute('data-base64', e.target.result.split(',')[1]); // Store raw base64 data
+
+            // Replace the placeholder div with the image
+            placeholderDiv.parentNode.replaceChild(img, placeholderDiv);
+            hideLoading();
+            showToast('Image inserted successfully!', 'success');
+        };
+        reader.readAsDataURL(file);
+    } catch (error) {
+        hideLoading();
+        console.error("Image insertion failed:", error);
+        showToast(`Image insertion failed: ${error.message}`, 'error');
+    }
+}
+
+
+// Global scope click trigger for the placeholders
+function triggerProjectImageUpload(event, targetId) {
+    event.stopPropagation();
+    const fileInput = document.getElementById('project-image-input');
+    fileInput.onchange = (e) => {
+        if (e.target.files.length > 0) {
+            handleProjectImageUpload(e.target.files[0], targetId);
+        }
+    };
+    fileInput.click();
+}
+
+// Attach drop listeners to newly created zones
+function attachProjectImageDropListeners() {
+    document.querySelectorAll('.image-upload-zone').forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--primary)';
+        });
+        zone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--warning)';
+        });
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--warning)';
+            if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].type.startsWith('image/')) {
+                handleProjectImageUpload(e.dataTransfer.files[0], zone.id);
+            } else {
+                 showToast('Please drop an image file.', 'warning');
+            }
+        });
+    });
+}
+
 // ====================================
 // EVENT LISTENER ATTACHMENT (The Orchestrator)
 // ====================================
@@ -258,6 +405,7 @@ function addEventListeners() {
     document.getElementById('generate-notes-btn')?.addEventListener('click', () => generateContent('notes'));
     document.getElementById('generate-summary-btn')?.addEventListener('click', () => generateContent('summary'));
     document.getElementById('generate-research-paper-btn')?.addEventListener('click', () => generateContent('research_paper'));
+    document.getElementById('generate-project-file-btn')?.addEventListener('click', () => generateContent('project_file'));
     document.getElementById('convert-docx-btn')?.addEventListener('click', () => handleFileConversion('docx'));
     document.getElementById('convert-epub-btn')?.addEventListener('click', () => handleFileConversion('epub'));
     document.getElementById('convert-txt-btn')?.addEventListener('click', () => handleFileConversion('txt'));
@@ -305,6 +453,7 @@ function addEventListeners() {
         const type = appState.generatedResearchPaper ? 'research_paper' : 'notes';
         handleExport('pdf', type);
     });
+    document.getElementById('generate-ai-image-btn')?.addEventListener('click', handleGenerateAndDownloadImage);
     document.getElementById('export-notes-docx-btn')?.addEventListener('click', () => {
         const type = appState.generatedResearchPaper ? 'research_paper' : 'notes';
         handleExport('docx', type);

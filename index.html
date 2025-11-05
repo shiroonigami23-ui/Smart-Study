@@ -272,11 +272,11 @@
                         <label for="subject-select">Subject</label>
                         <select id="subject-select" class="form-control">
                             <option value="">Select Subject</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Science">Science</option>
-                            <option value="History">History</option>
+                            <option value="Data Analytics">Mathematics</option>
+                            <option value="Data Science">Science</option>
+                            <option value="Perodic">History</option>
                             <option value="Literature">Literature</option>
-                            <option value="Computer Science">Computer Science</option>
+                            <option value="Computer-Architectural">Computer-Science</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -284,33 +284,43 @@
                         <label for="difficulty-select">Difficulty</label>
                         <select id="difficulty-select" class="form-control">
                             <option value="easy">Easy</option>
-                            <option value="medium">Medium</option>
-                            <option value="hard">Hard</option>
+                            <option value="mid">Medium</option>
+                            <option value="high">Hard</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="question-count">Number of Questions</label>
                         <input type="number" id="question-count" value="5" min="1" max="20" class="form-control">
                     </div>
+                     <div class="form-group" style="grid-column: 1 / -1;"> 
+        <label for="project-name-input">Project/Assignment Name (Optional)</label>
+        <input type="text" id="project-name-input" placeholder="ex. DBMS Lab Report 1" class="form-control">
+    </div>
                 </div>
 
                 <div class="generate-options">
-                    <button class="btn btn-primary" id="generate-quiz-btn">
-                        <span>🎯</span> Generate Quiz
-                    </button>
-                    <button class="btn btn-secondary" id="generate-flashcards-btn">
-                        <span>🎴</span> Generate Flashcards
-                    </button>
-                    <button class="btn btn-success" id="generate-notes-btn">
-                        <span>📝</span> Generate Notes
-                    </button>
-                    <button class="btn btn-accent" id="generate-summary-btn">
-                        <span>📄</span> Generate Summary
-                    </button>
-                    <button class="btn btn-info" id="generate-research-paper-btn"> 
-                        <span>📚</span> Generate Research Paper
-                    </button>
-                </div>
+    <button class="btn btn-primary" id="generate-quiz-btn">
+        <span>🎯</span> Generate Quiz
+    </button>
+    <button class="btn btn-secondary" id="generate-flashcards-btn">
+        <span>🎴</span> Generate Flashcards
+    </button>
+    <button class="btn btn-success" id="generate-notes-btn">
+        <span>📝</span> Generate Notes
+    </button>
+    <button class="btn btn-secondary" id="generate-project-file-btn"> 
+        <span>📁</span> Generate Project File
+    </button>
+    <button class="btn btn-accent" id="generate-summary-btn">
+        <span>📄</span> Generate Summary
+    </button>
+    <button class="btn btn-info" id="generate-research-paper-btn"> 
+        <span>📚</span> Generate Research Paper
+    </button>
+    <button class="btn btn-danger" id="generate-ai-image-btn"> 
+        <span>✨</span> Generate AI Image
+    </button>
+    </div>
             </div>
         </section>
 
@@ -724,6 +734,7 @@
     <script src="state.js"></script>
     <script src="cloudinary.js"></script>
     <script src="utils.js"></script>
+    <script src="imageGen.js"></script> 
     <script src="gamification.js"></script>
    
     <script src="firebaseApi.js"></script>

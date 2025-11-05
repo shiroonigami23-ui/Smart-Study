@@ -132,28 +132,46 @@ async function generateContent(type) {
             displayGeneratedNotes(notes); // from ui.js
             navigateToSection('notes'); 
             addXP(50, 'Generated notes'); // from gamification.js
-        } else if (type === 'summary') {
+             } else if (type === 'summary') {
             const summary = await generateSummaryFromContent(content);
             appState.generatedSummary = summary; // Store for export
             hideLoading(); 
             showToast('Summary generated successfully! Showing summary.', 'success'); 
-            addRecentActivity('📄', 'Generated content summary', 'Just now'); 
+            addRecentActivity('塘', 'Generated content summary', 'Just now'); 
             displayGeneratedSummary(summary); // from ui.js (uses modal)
             addXP(30, 'Generated summary'); // from gamification.js
-        }  else if (type === 'research_paper') { // <--- ADD RESEARCH PAPER LOGIC
+        } else if (type === 'research_paper') { // <--- EXISTING RESEARCH PAPER LOGIC
             const paper = await generateResearchPaperOutline(content, subject || 'General');
             if (!paper) {
-            hideLoading();
-            showToast('AI failed to generate a response. Please adjust content and try again.', 'error');
-            return;
-        }
+                hideLoading();
+                showToast('AI failed to generate a response. Please adjust content and try again.', 'error');
+                return;
+            }
             appState.generatedResearchPaper = paper; // Store for display/export
+            appState.generatedProjectFile = null; // Clear project file state
             hideLoading(); 
             showToast('Research paper outline generated successfully!', 'success'); 
-            addRecentActivity('📚', 'Generated research paper outline', 'Just now'); 
+            addRecentActivity('答', 'Generated research paper outline', 'Just now'); 
             displayGeneratedResearchPaper(paper); // from ui.js
+            navigateToSection('notes'); 
+            addXP(75, 'Generated research paper outline'); 
+        } else if (type === 'project_file') { // <--- NEW PROJECT FILE LOGIC
+            const projectName = document.getElementById('project-name-input').value.trim() || 'Untitled Project';
+            const projectFile = await generateProjectFile(content, subject || 'General', projectName); // New function call
+            if (!projectFile) {
+                hideLoading();
+                showToast('AI failed to generate a response. Please check content and try again.', 'error');
+                return;
+            }
+            appState.generatedResearchPaper = null; // Clear research paper state
+            appState.generatedProjectFile = projectFile; // Store the new content
+            hideLoading();
+            showToast('Project File Outline generated successfully!', 'success');
+            addRecentActivity('📁', `Generated project file: ${projectName}`, 'Just now'); 
+            displayGeneratedProjectFile(projectFile); // from ui.js
             navigateToSection('notes'); // Display in the Notes section
-            addXP(75, 'Generated research paper outline'); // More XP for a larger task
+            addXP(75, 'Generated project file'); 
+            attachProjectImageDropListeners();
         }
 
         // Save to Firestore (function in firebaseApi.js)
@@ -161,7 +179,7 @@ async function generateContent(type) {
             saveUserProfileToFirestore();
         }
     } catch (error) {
-        hideLoading(); 
+           hideLoading(); 
         console.error("Content generation error:", error);
         showToast('Error generating content. Please try again.', 'error'); 
     }

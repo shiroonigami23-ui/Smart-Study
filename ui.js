@@ -566,6 +566,65 @@ function displayGeneratedNotes(notes) {
     document.getElementById('export-notes-mp3-btn').disabled = false;
 }
 
+// ui.js (REPLACE displayGeneratedProjectFile function)
+
+/**
+ * Displays generated project file in the notes section.
+ * @param {string} projectFile The generated paper content.
+ */
+function displayGeneratedProjectFile(projectFile) { // <--- NEW FUNCTION
+    const notesContainer = document.getElementById('notes-container');
+    if (!notesContainer) return;
+
+    // Use a simple but effective markdown to HTML conversion
+    let formattedPaper = projectFile
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/^(#+)\s*(.*)/gm, (match, hashes, content) => {
+            // H1 for Title, H2 for Subject, H3 for Sections
+            const level = hashes.length > 3 ? 3 : hashes.length;
+            return `<h${level}>${content}</h${level}>`;
+        })
+        .replace(/\n/g, '<br>');
+
+    // Apply custom styling for TEXT placeholders and make them editable
+    formattedPaper = formattedPaper.replace(/Placeholder: \[USER INPUT: ([^\]]+)\]/g, (match, content) => {
+        // Highlighting user input placeholders with a secondary color background
+        return `<div class="user-editable-input" contenteditable="true" style="padding: 10px; margin: 8px 0; background: rgba(var(--color-secondary-rgb, 139, 92, 246), 0.2); color: var(--text-light); border-radius: 8px; font-weight: 600; min-height: 40px; border: 1px dashed var(--secondary); cursor: text;" 
+                    title="Click to edit: ${content}">[USER INPUT: ${content}]</div>`;
+    });
+        
+    // Apply custom styling for IMAGE placeholders and enable drop/click functionality
+    formattedPaper = formattedPaper.replace(/\[IMAGE UPLOAD ZONE: ([^\]]+)\]/g, (match, content) => {
+        // Highlighting image placeholders with a distinct color
+        const id = 'img-placeholder-' + Math.random().toString(36).substring(2, 9);
+        return `<div id="${id}" class="image-upload-zone" style="text-align: center; padding: 40px 20px; margin: 20px auto; border: 3px dashed var(--warning); border-radius: 12px; max-width: 500px; cursor: pointer;"
+                    title="Click or drag image here for: ${content}"
+                    onclick="triggerProjectImageUpload(event, '${id}')">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🖼️</div>
+                    <p style="font-weight: 600; color: var(--warning); margin: 0;">${content}</p>
+                    <p style="font-size: 13px; color: var(--text-gray); margin: 0;">(Click or Drop Image)</p>
+                </div>`;
+    });
+
+    // The main content-display div is now the primary editable area
+    notesContainer.innerHTML = `
+        <div id="project-file-content" class="content-display" contenteditable="true" style="padding: 32px; line-height: 1.8; max-width: 900px; margin: 0 auto;">
+            <h2 style="margin-bottom: 24px; color: var(--secondary); border-bottom: 2px solid var(--border); padding-bottom: 12px;">📁 Generated Project File Outline (Editable)</h2>
+            <div style="font-size: 15px;">${formattedPaper}</div>
+        </div>
+        <input type="file" id="project-image-input" accept="image/*" style="display: none;">
+    `;
+    
+    // Also need to re-attach drag/drop listeners for the zones (will be done in main.js)
+
+    // Enable export buttons
+    document.getElementById('export-notes-pdf-btn').disabled = false;
+    document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-epub-btn').disabled = false;
+    document.getElementById('export-notes-mp3-btn').disabled = false;
+}
+
+
 /**
  * Displays generated summary in a modal.
  * @param {string} summary The generated summary content.

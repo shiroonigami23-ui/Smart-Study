@@ -367,6 +367,70 @@ Generate detailed study notes now:`;
 
 
 /**
+ * Generates a full project/assignment file structure based on content and requirements.
+ * @param {string} content The source text content (e.g., experiment list, topic list).
+ * @param {string} subject The subject/category.
+ * @param {string} projectName The name of the project/assignment.
+ * @returns {Promise<string>} The generated, highly structured project file content (Markdown/HTML format).
+ */
+// geminiApi.js (REPLACE generateProjectFile function)
+
+/**
+ * Generates a full project/assignment file structure based on content and requirements.
+ * @param {string} content The source text content (e.g., experiment list, topic list).
+ * @param {string} subject The subject/category.
+ * @param {string} projectName The name of the project/assignment.
+ * @returns {Promise<string>} The generated, highly structured project file content (Markdown/HTML format).
+ */
+async function generateProjectFile(content, subject, projectName) {
+    const prompt = `
+    --- INSTRUCTION START ---
+    **PERSONA**: You are a professional academic assistant designing a comprehensive ${subject} project file named "${projectName}". Use a formal, detailed, and educational tone.
+    **CONTEXT**: The user provided the following key topics/experiments: ${content}
+    **TASK**: Generate the complete project file content. Use clear Markdown structure (H1, H2, lists, tables) for formatting.
+    **GOAL**: Produce a structured document containing the following EXACT sections in order, using placeholder notes for user customization:
+    --- INSTRUCTION END ---
+
+    **STEP-BY-STEP OUTPUT REQUIREMENTS:**
+
+    1.  **FRONT PAGE (Metadata & Placeholders)**: Generate this section first.
+        * # Project Title: ${projectName}
+        * ## Subject: ${subject}
+        * Placeholder: [USER INPUT: **College/Institution Name**]
+        * Placeholder: [IMAGE UPLOAD ZONE: **College Logo (150x150px)**]
+        * ### Student Details
+        * Placeholder: [USER INPUT: **Student Name, Roll No., Class**]
+        * ### Supervisor
+        * Placeholder: [USER INPUT: **Teacher/Supervisor Name**]
+        * Placeholder: [Date: ${new Date().toLocaleDateString()}]
+        *
+        * --- PAGE BREAK (For PDF Export) ---
+
+    2.  **TABLE OF CONTENTS PLACEHOLDER**: Generate a section with the title **## Table of Contents** and the body text: [TOC PLACEHOLDER: The final table of contents will be generated here during PDF export with accurate page numbers.]
+
+    3.  **INTRODUCTION**: Write a 200-word introduction setting the project's goals, scope, and relevance based on the content provided.
+
+    4.  **EXPERIMENTS/SECTIONS (Detailed Content)**:
+        * For EACH topic/experiment/assignment listed in the source content, generate a detailed section.
+        * Each section must start with a **H3** title explicitly numbered (e.g., **### Experiment 1: Title of Experiment**).
+        * Include in-depth details like: **Theory/Aim**, **Materials Required**, **Procedure/Methodology**, **Observation/Data Table** (with simulated, realistic data examples), and a **Result/Conclusion**.
+        * **Crucially**: Inside each section, generate a prominent **[IMAGE UPLOAD ZONE: Diagram/Photo for Experiment ${Math.floor(Math.random() * 10) + 1} (400x300px)]** note to indicate where the user should add their image later.
+        * **Include --- PAGE BREAK (For PDF Export) --- after each Experiment section.**
+
+    5.  **CONCLUSION**: Write a final 100-word summary of the project's key findings.
+
+    Generate the Project File now:`;
+
+    const response = await callGeminiAPI(prompt);
+    
+    // Fallback to prevent app crash
+    if (!response) {
+        return `# ❌ AI Generation Failed: Request Timed Out or Blocked\n\n**Abstract:** The AI service could not process the complex project prompt. Please simplify your list of experiments/topics and try again.\n\n## Next Steps\n- Recheck your source content for clarity.\n- Try again with a shorter list of topics.`;
+    }
+    return response;
+}
+
+/**
  * Generates a research paper structure/draft from content using the Gemini API.
  * * Strategy: Uses a highly structured 'Chain-of-Thought' list format to break 
  * down the complex task into atomic, sequential steps, reducing the risk of timeout.
