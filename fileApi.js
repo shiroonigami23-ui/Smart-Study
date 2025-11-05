@@ -141,110 +141,408 @@ async function extractTextFromEPUB(file) {
 // NEW: DOCUMENT EXPORT FUNCTIONS 
 // ====================================
 
-// fileApi.js (REPLACE exportContentToPDF function)
+      // file: fileApi.js (Complete replacement of exportContentToPDF function)
 
 /**
- * Exports text content to a PDF file using jsPDF, now handling page breaks, numbering, and image embedding for project files.
+ * Exports text content to a PDF file using jsPDF, now handling page breaks, numbering, 
+ * image embedding, and a true two-pass TOC generation, and table rendering.
  * @param {string} content The text content to export.
  * @param {string} filename The desired filename (without extension).
- * @param {boolean} isProjectFile Flag to enable custom formatting (TOC, page breaks, images).
+ * @param {boolean} isProjectFile Flag to enable custom formatting (TOC, page breaks, images, tables).
  */
 function exportContentToPDF(content, filename, isProjectFile = false) {
     if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         showToast('Error: jsPDF library not loaded for PDF export.', 'error');
         return;
     }
+    
+    let doc;
+    try {
+        doc = new window.jspdf.jsPDF();
+    } catch (e) {
+        console.error("Failed to create jsPDF instance:", e);
+        showToast('Error initializing PDF engine.', 'error');
+        return;
+    }
+
+    const hasAutoTable = typeof doc.autoTable === 'function';
 
     try {
-        const doc = new window.jspdf.jsPDF();
-        let yPos = 10; // Starting Y position
+        let yPos = 10;
         let pageNumber = 1;
         const margin = 10;
         const pageHeight = doc.internal.pageSize.height;
-        const lineHeight = 5; // Fixed line height for simple calculation
+        const pageWidth = doc.internal.pageSize.width;
+        const lineHeight_Normal = 5; 
+        const lineHeight_H1 = 14; 
+        const lineHeight_H2 = 8;
+        const lineHeight_H3 = 6;
         const maxWidth = 190;
-        const fontSize = 12;
+        const fontSize_Normal = 12;
 
-        doc.setFontSize(fontSize);
+        doc.setFontSize(fontSize_Normal);
+        
+        // --- Shared Helper Functions ---
 
-        // Function to add a footer
         const addFooter = (pageNo) => {
-            const footerText = isProjectFile ? `Page ${pageNo}` : `Exported by Study Hub | Page ${pageNo}`;
+            // Do NOT add footer/page number to the first page (front page)
+            if (pageNo === 1 && isProjectFile) return; 
+            
+            const footerText = isProjectFile ? `Page ${pageNo - 1}` : `Exported by Study Hub | Page ${pageNo}`; // Adjusted page count for front page skip
             doc.setFontSize(10);
-            doc.text(footerText, doc.internal.pageSize.width - margin, pageHeight - 5, { align: 'right' });
-            doc.setFontSize(fontSize); // Reset font size
+            doc.text(footerText, pageWidth - margin, pageHeight - 5, { align: 'right' });
+            doc.setFontSize(fontSize_Normal);
         };
         
-        // Function to manage page breaks and content
-        const addNewPage = () => {
-            if (pageNumber > 0) {
-                 addFooter(pageNumber); // Add footer to the finished page
+        const addNewPage = (skipFooter = false) => {
+            if (pageNumber > 0 && !skipFooter) {
+                 addFooter(pageNumber);
             }
             doc.addPage();
             pageNumber++;
-            yPos = margin; // Reset Y position
+            yPos = margin;
         };
 
-        const contentBlocks = content.split('\n'); // Split by newline for simple text rendering
+        const imageMarkerRegex = /<<<IMAGE_(\w+)_([A-Za-z0-9+/=]+)>>>/g;
         
-        // Image marker pattern: <<<IMAGE_type_base64>>>
-        const imageMarkerRegex = /<<<IMAGE_(\w+)_([A-Za-z0-9+/=]+)>>>/;
+        // --- Custom Front Page Rendering ---
+        const renderFrontPage = (blocks) => {
+            const data = {};
+            const logoMarker = blocks.find(b => b.includes('###LOGO_PLACEHOLDER###'));
+            
+            // 1. Extract Data
+            blocks.filter(b => b.startsWith('###')).forEach(b => {
+                const parts = b.split(':', 2);
+                const key = parts[0].replace(/#| /g, '').toLowerCase();
+                data[key] = parts[1] ? parts[1].trim() : '';
+            });
 
-        for (const block of contentBlocks) {
-            let currentLine = block;
+            // 2. Render Logo/Institution (Top Center)
+            const logoMatch = logoMarker ? logoMarker.match(imageMarkerRegex) : null;
+            const instituteName = data.institution_name || 'Your Institution Name';
+            const projectTitle = data.project_title || 'Project Title: Untitled Project';
+            const subject = data.subject || 'Subject: General';
 
-            // 1. Check for page break marker
+            // Logo Placeholder
+            const logoWidth = 50;
+            const logoHeight = 50;
+            const logoX = (pageWidth - logoWidth) / 2;
+            doc.rect(logoX, 40, logoWidth, logoHeight); // Visual box for logo area
+            
+            if (logoMatch && logoMatch.length > 0) {
+                 const imgMatch = imageMarkerRegex.exec(logoMatch[0]); 
+                 imageMarkerRegex.lastIndex = 0; 
+                 if (imgMatch) {
+                     const imgType = imgMatch[1].toUpperCase();
+                     const base64Data = imgMatch[2];
+                     const dataUrl = `data:image/${imgType.toLowerCase()};base64,${base64Data}`;
+                     try {
+                          doc.addImage(dataUrl, imgType, logoX + 5, 45, logoWidth - 10, logoHeight - 10);
+                     } catch (e) {
+                         doc.text("Logo", pageWidth / 2, 65, { align: 'center' });
+                     }
+                 }
+            } else {
+                 doc.text("Logo Area", pageWidth / 2, 65, { align: 'center' });
+            }
+            
+            // Institution Name
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(20);
+            doc.text(instituteName, pageWidth / 2, 105, { align: 'center' });
+            
+            // Project Title & Subject
+            doc.setFontSize(26);
+            doc.text(projectTitle, pageWidth / 2, 125, { align: 'center' });
+            
+            doc.setFontSize(16);
+            doc.text(subject, pageWidth / 2, 140, { align: 'center' });
+            
+            // Horizontal Separator
+            doc.line(margin, 150, pageWidth - margin, 150); 
+            
+            // Date
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Date: ${data.date || new Date().toLocaleDateString()}`, pageWidth / 2, 160, { align: 'center' });
+
+            // 3. Render Student/Supervisor (Bottom Left/Right)
+            const studentDetails = data.student_details || 'Student Name, Roll No., Class';
+            const supervisorDetails = data.supervisor_details || 'Teacher/Supervisor Name';
+
+            // Student Section (Left)
+            let yBottom = pageHeight - 70;
+            doc.setFont(undefined, 'bold');
+            doc.text("Submitted By:", margin + 5, yBottom);
+            doc.setFont(undefined, 'normal');
+            doc.text(studentDetails, margin + 5, yBottom + 7);
+            doc.line(margin + 5, yBottom + 18, margin + 80, yBottom + 18); // Signature line
+            doc.setFontSize(10);
+            doc.text("(Signature of Student)", margin + 5, yBottom + 23);
+
+            // Supervisor Section (Right)
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text("Certified By:", pageWidth - margin - 5, yBottom, { align: 'right' });
+            doc.setFont(undefined, 'normal');
+            doc.text(supervisorDetails, pageWidth - margin - 5, yBottom + 7, { align: 'right' });
+            doc.line(pageWidth - margin - 80, yBottom + 18, pageWidth - margin - 5, yBottom + 18); // Signature line
+            doc.setFontSize(10);
+            doc.text("(Signature of Supervisor)", pageWidth - margin - 5, yBottom + 23, { align: 'right' });
+            
+            // Move to the next page
+            doc.addPage(); 
+            pageNumber++;
+            yPos = margin;
+        };
+
+
+        // --- Pass 1: Collect Headings and Page Numbers ---
+        
+        let tocEntries = []; 
+        let currentPageTracker = 1; // Tracks page number for mapping headings
+
+        for (const block of content.split('\n')) {
+            const currentLine = block.trim();
+            if (!currentLine) continue; 
+            
+            if (isProjectFile && currentLine.includes('--- PAGE BREAK')) {
+                currentPageTracker++; 
+                continue;
+            }
+            
+            // Collect headings only for non-front page content
+            if (currentPageTracker > 1) { 
+                const h2Match = currentLine.match(/^## (.*)/);
+                const h3Match = currentLine.match(/^### (.*)/);
+                
+                if (h2Match) {
+                    tocEntries.push({ text: h2Match[1].trim(), level: 2, page: currentPageTracker - 1 }); // Adjusted page num
+                } else if (h3Match) {
+                    tocEntries.push({ text: h3Match[1].trim(), level: 3, page: currentPageTracker - 1 }); // Adjusted page num
+                }
+            }
+        }
+        
+        // --- TOC Rendering Function ---
+        const renderTOC = () => {
+             doc.setFont(undefined, 'bold');
+             doc.setFontSize(18);
+             doc.text("Table of Contents", margin, yPos);
+             yPos += lineHeight_H2;
+
+             doc.setFont(undefined, 'normal');
+             doc.setFontSize(fontSize_Normal);
+             
+             for (const entry of tocEntries) {
+                 const indent = (entry.level - 2) * 20; 
+                 const text = `${' '.repeat(Math.max(0, indent / 4))} ${entry.text}`; // Reduced visual indent
+                 const pageNumText = entry.page.toString();
+                 
+                 if (yPos + lineHeight_Normal > pageHeight - margin) {
+                     addNewPage();
+                 }
+
+                 doc.text(text, margin, yPos);
+                 doc.text(pageNumText, pageWidth - margin, yPos, { align: 'right' });
+                 yPos += lineHeight_Normal;
+             }
+             yPos += lineHeight_Normal; 
+             doc.setFont(undefined, 'normal');
+        };
+
+        // Reset state for the actual rendering pass
+        pageNumber = 1;
+        yPos = margin;
+        let hasRenderedTOC = false;
+        const contentBlocks = content.split('\n');
+        
+        // --- Conditional Front Page Render ---
+        if (isProjectFile && contentBlocks[0].includes('###PROJECT_TITLE###')) {
+            // Find all blocks until the first page break
+            const frontPageBlocks = [];
+            for(const block of contentBlocks) {
+                if (block.includes('--- PAGE BREAK')) break;
+                frontPageBlocks.push(block);
+            }
+            // Render the complex front page layout
+            renderFrontPage(frontPageBlocks); 
+            
+            // Advance the index to start rendering actual content from the Introduction/TOC
+            // Find the line index of the first actual content after the front page break
+            let startIndex = 0;
+            for(let i = 0; i < contentBlocks.length; i++) {
+                if (contentBlocks[i].includes('--- PAGE BREAK')) {
+                    startIndex = i + 1;
+                    break;
+                }
+            }
+            i = startIndex;
+        }
+
+        // --- Pass 2: Render Content and TOC ---
+        
+        for (let i = 0; i < contentBlocks.length; i++) {
+            const block = contentBlocks[i];
+            let currentLine = block.trim();
+            
+            // If the front page was rendered, skip the first page's content blocks
+            if (isProjectFile && pageNumber === 1 && currentLine.includes('###PROJECT_TITLE###')) {
+                continue; 
+            }
+            if (!currentLine) continue; 
+
+            let currentLineHeight = lineHeight_Normal;
+            let currentFontSize = fontSize_Normal;
+            let fontStyle = 'normal';
+            let printContent = currentLine;
+            
+            // A. Check for page break marker
             if (isProjectFile && currentLine.includes('<<<PAGEBREAK>>>')) {
                 addNewPage();
                 continue;
             }
+            
+            // B. Check for TOC placeholder and render it
+            if (isProjectFile && currentLine.includes('<<<TOC_PLACEHOLDER>>>') && !hasRenderedTOC) {
+                renderTOC();
+                hasRenderedTOC = true;
+                continue;
+            }
+            
+            // C. Table Detection Logic (EXISTING LOGIC)
+            if (isProjectFile && currentLine.includes('|') && currentLine.match(/\|[^|]*\|/)) {
+                const tableContent = [];
+                let header = currentLine;
+                let dataStartLine = i + 1;
 
-            // 2. Check for image marker
-            const imageMatch = currentLine.match(imageMarkerRegex);
-            if (isProjectFile && imageMatch) {
-                // If the entire block is an image marker, process it
-                if (currentLine.trim() === imageMatch[0]) {
-                    const imgType = imageMatch[1].toUpperCase();
-                    const base64Data = imageMatch[2];
-                    const dataUrl = `data:image/${imgType.toLowerCase()};base64,${base64Data}`;
-                    
-                    // Estimate image size (assume 80% width for layout)
-                    const imgWidth = 150; 
-                    const imgHeight = 100; // Fixed size estimate for placement
-                    
-                    if (yPos + imgHeight + lineHeight > pageHeight - margin) {
+                while (dataStartLine < contentBlocks.length && contentBlocks[dataStartLine].trim().includes('---')) {
+                    dataStartLine++; 
+                }
+
+                let dataEndLine = dataStartLine;
+                while (dataEndLine < contentBlocks.length && contentBlocks[dataEndLine].trim().includes('|')) {
+                    tableContent.push(contentBlocks[dataEndLine]);
+                    dataEndLine++;
+                }
+
+                if (tableContent.length > 0) {
+                    const headers = header.split('|').map(h => h.trim()).filter(h => h.length > 0);
+                    const body = tableContent.map(row => 
+                        row.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0)
+                    );
+
+                    const roughTableHeight = (headers.length + body.length) * 8; 
+                    if (yPos + roughTableHeight > pageHeight - margin) {
                         addNewPage();
                     }
-                    
-                    try {
-                         doc.addImage(dataUrl, imgType, margin + 20, yPos, imgWidth, imgHeight);
-                         yPos += imgHeight + lineHeight; // Advance position past the image
-                    } catch (imgError) {
-                        console.error("jsPDF Image Embedding Failed:", imgError);
-                        // Fallback: print a text error
-                        doc.text(`[Error: Failed to embed image of type ${imgType}]`, margin, yPos);
-                        yPos += lineHeight * 2;
+
+                    if (hasAutoTable) {
+                        doc.autoTable({
+                            startY: yPos,
+                            head: [headers],
+                            body: body,
+                            margin: { left: margin, right: margin },
+                            theme: 'grid',
+                            styles: { fontSize: 10, cellPadding: 2, lineWidth: 0.1, overflow: 'linebreak' }, 
+                            headStyles: { fillColor: [63, 81, 181] }, 
+                            didDrawPage: (data) => {
+                                yPos = data.settings.startY + data.settings.margin.top; 
+                            }
+                        });
+                        yPos = doc.lastAutoTable.finalY + lineHeight_Normal;
+                        i = dataEndLine - 1; 
+                        continue;
+                    } else {
+                        doc.text("⚠️ Table content (requires autotable for visual rendering):", margin, yPos);
+                        yPos += lineHeight_Normal;
+                        i = dataEndLine - 1; 
+                        continue;
                     }
-                    continue; // Done with this block
                 }
             }
 
-            // 3. Process text lines (word wrap)
-            const wrappedLines = doc.splitTextToSize(currentLine, maxWidth);
+
+            // D. Heading and Formatting Detection
+            const h1Match = currentLine.match(/^# (.*)/);
+            const h2Match = currentLine.match(/^## (.*)/);
+            const h3Match = currentLine.match(/^### (.*)/);
+            
+            if (h1Match) {
+                currentLineHeight = lineHeight_H1;
+                currentFontSize = 24;
+                fontStyle = 'bold';
+                printContent = h1Match[1].trim();
+            } else if (h2Match) {
+                currentLineHeight = lineHeight_H2;
+                currentFontSize = 18;
+                fontStyle = 'bold';
+                printContent = h2Match[1].trim();
+            } else if (h3Match) {
+                currentLineHeight = lineHeight_H3;
+                currentFontSize = 14;
+                fontStyle = 'bold';
+                printContent = h3Match[1].trim();
+            } else {
+                 printContent = printContent.replace(/\*\*(.*?)\*\*/g, (match, p1) => p1.toUpperCase());
+                 printContent = printContent.replace(/^- (.*)/g, (match, p1) => `• ${p1}`);
+            }
+            
+            // E. Image Embedding
+            const imageMatch = printContent.match(imageMarkerRegex);
+            if (isProjectFile && imageMatch && imageMatch.length > 0) {
+                 const match = imageMarkerRegex.exec(imageMatch[0]); 
+                 imageMarkerRegex.lastIndex = 0; 
+                 
+                 if (match) {
+                     const imgType = match[1].toUpperCase();
+                     const base64Data = match[2];
+                     const dataUrl = `data:image/${imgType.toLowerCase()};base64,${base64Data}`;
+                     
+                     const imgWidth = 150; 
+                     const imgHeight = 100;
+                     
+                     if (yPos + imgHeight + lineHeight_Normal > pageHeight - margin) {
+                         addNewPage();
+                     }
+                     
+                     try {
+                          const xOffset = (pageWidth - imgWidth) / 2;
+                          doc.addImage(dataUrl, imgType, xOffset, yPos, imgWidth, imgHeight);
+                          yPos += imgHeight + lineHeight_Normal;
+                     } catch (imgError) {
+                         doc.text(`[Image Error: Failed to embed ${imgType}]`, margin, yPos);
+                         yPos += lineHeight_Normal * 2;
+                     }
+                     continue; 
+                 }
+            }
+
+            // F. Text Wrapping and Rendering
+            doc.setFont(undefined, fontStyle);
+            doc.setFontSize(currentFontSize);
+            const wrappedLines = doc.splitTextToSize(printContent, maxWidth);
 
             for (const wrappedLine of wrappedLines) {
-                if (yPos + lineHeight > pageHeight - margin) {
+                if (yPos + currentLineHeight > pageHeight - margin) {
                     addNewPage();
                 }
 
                 doc.text(wrappedLine, margin, yPos);
-                yPos += lineHeight;
+                yPos += currentLineHeight;
             }
+            
+            if (h1Match || h2Match || h3Match) {
+                 yPos += lineHeight_Normal / 2;
+            }
+            doc.setFont(undefined, 'normal'); 
         }
         
-        // Add footer to the last page
-        addFooter(pageNumber);
-
+        // Add footer to the last page (only if there is content)
+        if (pageNumber > 1 || contentBlocks.length > 0) {
+            addFooter(pageNumber); 
+        }
+        
         doc.save(`${filename}.pdf`);
 
         showToast('PDF exported successfully!', 'success');
@@ -254,8 +552,7 @@ function exportContentToPDF(content, filename, isProjectFile = false) {
         showToast('Error exporting to PDF.', 'error');
     }
 }
-
-
+  
 
 /**
  * Exports text content to a DOCX (Word) file using a simple Blob download.

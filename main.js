@@ -92,8 +92,7 @@ async function handleAvatarUpload() {
 // ====================================
 // EXPORT/DOWNLOAD LOGIC
 // ====================================
-
-// main.js (REPLACE handleExport function)
+// file: main.js (Complete replacement of function)
 
 /**
  * Exports the current generated notes or summary to the specified format.
@@ -109,6 +108,7 @@ async function handleExport(format, type) {
     if (isProjectFile) {
         const projectContentDiv = document.getElementById('project-file-content');
         if (projectContentDiv) {
+            // Get the live HTML content (with user edits and images)
             content = projectContentDiv.innerHTML;
             const h1Match = content.match(/<h1.*?>(.*?)<\/h1>/i);
             title = h1Match ? h1Match[1].replace(/<br>/g, ' ').trim() : 'Project_File_Export';
@@ -132,10 +132,9 @@ async function handleExport(format, type) {
         return;
     }
       
-    showLoading(`Preparing ${format.toUpperCase()} download...`); 
+    showLoading(`Preparing ${format.toUpperCase()} download...`);
 
     try {
-        // 2. CRITICAL FIX: Robustly strip all UI-specific elements & pre-process for export
         let contentText = content; 
         
         // Step A: Convert the live HTML (with user edits) into a temporary DOM
@@ -144,64 +143,56 @@ async function handleExport(format, type) {
 
         // Step B: Clean the DOM (Remove UI, fix content)
         tempDiv.querySelector('h2[style*="Generated Project File Outline"]')?.remove();
+        
+        // 1. Collect all embedded images first, before removing placeholders
+        tempDiv.querySelectorAll('.project-embedded-image').forEach(imgEl => {
+            const base64 = imgEl.getAttribute('data-base64');
+            const type = imgEl.getAttribute('data-image-type').split('/')[1];
+            const marker = `<<<IMAGE_${type}_${base64}>>>\n`;
+            
+            imgEl.parentNode.insertBefore(document.createTextNode(marker), imgEl);
+            imgEl.remove(); 
+        });
+
+        // 2. Process all other placeholders
         tempDiv.querySelectorAll('.image-upload-zone').forEach(el => el.remove());
         
         tempDiv.querySelectorAll('.user-editable-input').forEach(el => {
             if (el.textContent.includes('[USER INPUT:')) {
                 el.textContent = ' '; 
             }
-            // Unwrap the content from the styling div
             const textNode = document.createTextNode(el.textContent.trim());
             el.parentNode.replaceChild(textNode, el);
         });
+        
+        // 3. Final Text Extraction (Get content as a string of text)
+        let finalContentHTML = tempDiv.innerHTML;
+        
+        // Remove all <br> tags introduced by innerHTML to rely on \n only
+        finalContentHTML = finalContentHTML.replace(/<br\s*\/?>/gi, '\n');
+        
+        // Now, extract only the text and apply formatting cleanup
+        const finalTempDiv = document.createElement('div');
+        finalTempDiv.innerHTML = finalContentHTML;
+        contentText = finalTempDiv.textContent || finalTempDiv.innerText || ''; 
 
-        // 3. PROJECT FILE ENHANCEMENT (TOC and Pagination Logic)
+
+        // 4. PROJECT FILE ENHANCEMENT (TOC and Pagination Logic) - FINAL STEP
         if (isProjectFile) {
-            const headingElements = Array.from(tempDiv.querySelectorAll('h3, h2, h1'));
-            let tocItems = [];
-            
-            // Generate TOC structure and replace placeholders
-            headingElements.forEach((h) => {
-                if (h.textContent.includes('PAGE BREAK')) return;
-                const level = parseInt(h.tagName.substring(1));
-                tocItems.push({ level, text: h.textContent.trim(), page: '{{PAGENO}}' });
-            });
-
-            // Reconstruct content, adding in the final TOC and manual pagination markers
-            const htmlString = tempDiv.innerHTML;
-            
-            // Replaces the TOC placeholder with the generated list (for HTML preview fallback/text extraction)
-            let tocHtml = tocItems.map(item => {
-                const indent = item.level * 10; 
-                return `<li style="margin-left: ${indent}px; font-size: 14px;">${item.text}</li>`;
-            }).join('');
-            tocHtml = `<h2>Table of Contents</h2><ul>${tocHtml}</ul>`;
-
-            let contentWithPageBreaks = htmlString.replace(/\[TOC PLACEHOLDER.*?\]/, tocHtml);
-
-            // Re-wrap the content in a new temp div for final text extraction
-            const finalTempDiv = document.createElement('div');
-            finalTempDiv.innerHTML = contentWithPageBreaks;
-            
-            // Final Text Extraction (now including TOC and image markers if PDF)
-            contentText = finalTempDiv.textContent || finalTempDiv.innerText || ''; 
-            
             // Replace the AI's page break marker with our function-specific one.
             contentText = contentText.replace(/--- PAGE BREAK \(For PDF Export\) ---/gi, '<<<PAGEBREAK>>>');
-        } else {
-             // For standard notes/summary, just get the pure text from the cleaned tempDiv
-             contentText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // CRITICAL: Ensure the FINAL TOC Placeholder text is recognizable plaintext.
+            contentText = contentText.replace(/\[TOC PLACEHOLDER.*?\]/i, '<<<TOC_PLACEHOLDER>>>');
         }
 
         if (!contentText.trim()) {
             throw new Error(`Content is empty after cleaning.`);
         }
         
-        
-        // 4. Call Export Functions
+        // 5. Call Export Functions
         if (format === 'pdf') {
-            // CRITICAL: PDF now needs the special contentText with page breaks.
-            await exportContentToPDF(contentText, title, isProjectFile); // Pass flag
+            await exportContentToPDF(contentText, title, isProjectFile);
         } else if (format === 'docx') {
             await exportContentToDOCX(contentText, title); 
         } else if (format === 'epub') { 
@@ -209,22 +200,21 @@ async function handleExport(format, type) {
         } else if (format === 'wav') {
             await exportContentToWAV(contentText, title); 
         } else if (format === 'png' || format === 'jpeg') {
-            const contentForImage = document.getElementById('project-file-content') || tempDiv;
+            const contentForImage = document.getElementById('project-file-content') || document.querySelector('#notes-container .content-display');
             await exportContentToImage(contentForImage.outerHTML, title, format);
         }
         
-        hideLoading(); 
-        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully as ${format.toUpperCase()}!`, 'success'); 
-        addRecentActivity('📁', `Exported ${type} to ${format.toUpperCase()}`, 'Just now'); 
-        addXP(25, 'Exported content'); 
+        hideLoading();
+        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully as ${format.toUpperCase()}!`, 'success');
+        addRecentActivity('📁', `Exported ${type} to ${format.toUpperCase()}`, 'Just now');
+        addXP(25, 'Exported content');
 
     } catch (error) {
-        hideLoading(); 
+        hideLoading();
         console.error(`Export to ${format} failed:`, error);
-        showToast(`Export failed: ${error.message}. Try reviewing content.`, 'error'); 
+        showToast(`Export failed: ${error.message || 'Check console for details.'}.`, 'error');
     }
 }
-
 
 
 // main.js (REPLACE handleProjectImageUpload function)
@@ -235,42 +225,42 @@ async function handleExport(format, type) {
  * @param {string} targetId The ID of the placeholder div to replace.
  */
 async function handleProjectImageUpload(file, targetId) {
-    const placeholderDiv = document.getElementById(targetId);
-    if (!placeholderDiv) return;
+    const placeholderDiv = document.getElementById(targetId); //
+    if (!placeholderDiv) return; //
 
-    showLoading('Inserting image...');
+    showLoading('Inserting image...'); //
 
     try {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = document.createElement('img');
+        const reader = new FileReader(); //
+        reader.onload = (e) => { //
+            const img = document.createElement('img'); //
             img.src = e.target.result; // This is the Base64 Data URL
             img.style.maxWidth = '100%';
             img.style.height = 'auto';
             img.style.display = 'block';
             img.style.margin = '20px auto';
             img.style.borderRadius = '8px';
-            img.style.border = '2px dashed var(--warning)';
+            img.style.border = '2px dashed var(--success)'; // Changed to success for visual cue
             img.style.padding = '5px';
             
             // CRITICAL FIX: Add a class for identification and store Base64/type for PDF export
-            img.classList.add('project-embedded-image');
-            img.setAttribute('data-image-type', file.type);
-            img.setAttribute('data-base64', e.target.result.split(',')[1]); // Store raw base64 data
+            img.classList.add('project-embedded-image'); //
+            img.setAttribute('data-image-type', file.type); //
+            // Store raw base64 data (after the comma) for smaller string in the marker
+            img.setAttribute('data-base64', e.target.result.split(',')[1]); //
 
             // Replace the placeholder div with the image
-            placeholderDiv.parentNode.replaceChild(img, placeholderDiv);
-            hideLoading();
-            showToast('Image inserted successfully!', 'success');
+            placeholderDiv.parentNode.replaceChild(img, placeholderDiv); //
+            hideLoading(); //
+            showToast('Image inserted successfully!', 'success'); //
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); //
     } catch (error) {
-        hideLoading();
-        console.error("Image insertion failed:", error);
-        showToast(`Image insertion failed: ${error.message}`, 'error');
+        hideLoading(); //
+        console.error("Image insertion failed:", error); //
+        showToast(`Image insertion failed: ${error.message}`, 'error'); //
     }
 }
-
 
 // Global scope click trigger for the placeholders
 function triggerProjectImageUpload(event, targetId) {

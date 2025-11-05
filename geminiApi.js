@@ -366,14 +366,7 @@ Generate detailed study notes now:`;
 }
 
 
-/**
- * Generates a full project/assignment file structure based on content and requirements.
- * @param {string} content The source text content (e.g., experiment list, topic list).
- * @param {string} subject The subject/category.
- * @param {string} projectName The name of the project/assignment.
- * @returns {Promise<string>} The generated, highly structured project file content (Markdown/HTML format).
- */
-// geminiApi.js (REPLACE generateProjectFile function)
+// file: geminiApi.js (REPLACE generateProjectFile function)
 
 /**
  * Generates a full project/assignment file structure based on content and requirements.
@@ -393,16 +386,14 @@ async function generateProjectFile(content, subject, projectName) {
 
     **STEP-BY-STEP OUTPUT REQUIREMENTS:**
 
-    1.  **FRONT PAGE (Metadata & Placeholders)**: Generate this section first.
-        * # Project Title: ${projectName}
-        * ## Subject: ${subject}
-        * Placeholder: [USER INPUT: **College/Institution Name**]
-        * Placeholder: [IMAGE UPLOAD ZONE: **College Logo (150x150px)**]
-        * ### Student Details
-        * Placeholder: [USER INPUT: **Student Name, Roll No., Class**]
-        * ### Supervisor
-        * Placeholder: [USER INPUT: **Teacher/Supervisor Name**]
-        * Placeholder: [Date: ${new Date().toLocaleDateString()}]
+    1.  **FRONT PAGE (Absolute Layout Tags)**: Generate this section first using the following EXACT tags:
+        * ###PROJECT_TITLE###: ${projectName}
+        * ###SUBJECT###: ${subject}
+        * ###INSTITUTION_NAME###: [USER INPUT: **College/Institution Name**]
+        * ###LOGO_PLACEHOLDER###: [IMAGE UPLOAD ZONE: **College Logo (150x150px)**]
+        * ###STUDENT_DETAILS###: [USER INPUT: **Student Name, Roll No., Class**]
+        * ###SUPERVISOR_DETAILS###: [USER INPUT: **Teacher/Supervisor Name**]
+        * ###DATE###: ${new Date().toLocaleDateString()}
         *
         * --- PAGE BREAK (For PDF Export) ---
 
@@ -429,6 +420,7 @@ async function generateProjectFile(content, subject, projectName) {
     }
     return response;
 }
+
 
 /**
  * Generates a research paper structure/draft from content using the Gemini API.

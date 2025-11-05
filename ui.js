@@ -624,7 +624,6 @@ function displayGeneratedProjectFile(projectFile) { // <--- NEW FUNCTION
     document.getElementById('export-notes-mp3-btn').disabled = false;
 }
 
-
 /**
  * Displays generated summary in a modal.
  * @param {string} summary The generated summary content.
