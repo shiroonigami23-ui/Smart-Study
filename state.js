@@ -32,6 +32,7 @@ const appState = {
     studySessions: [],
     uploadedContent: null,
     uploadedContentType: null,
+    isUploadedContentEditable: false, // <--- NEW FLAG
     quizHistory: [],
     flashcardHistory: [],
     generatedNotes: null,

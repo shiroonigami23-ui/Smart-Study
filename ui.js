@@ -38,6 +38,101 @@ function navigateToSection(sectionId) {
     }
 }
 
+
+// file: ui.js (Complete replacement of displayEditableUpload function)
+
+/**
+ * Displays raw, extracted content from an upload in the notes section as an editable field.
+ * CRITICAL FIX: Now processes AI-CLEANED Markdown (tables, fixed structure) into HTML.
+ * @param {string} content The cleaned Markdown content.
+ * @param {string} fileName The name of the file uploaded.
+ */
+function displayEditableUpload(content, fileName) {
+    const notesContainer = document.getElementById('notes-container');
+    if (!notesContainer) return;
+    
+    appState.generatedResearchPaper = null;
+    appState.generatedProjectFile = null;
+
+    let formattedContent = content;
+
+    // --- 1. AI-Cleaned Markdown to HTML Conversion ---
+    
+    // A. Table Detection (from AI-output Markdown)
+    // Find Markdown tables and convert them to editable HTML tables
+    formattedContent = formattedContent.replace(/\|(.+)\|((?:\s*\|.*\|[\r\n]*)*)/g, (match, headerLine, contentLines) => {
+        const lines = contentLines.trim().split('\n').filter(line => line.trim().startsWith('|'));
+        if (lines.length === 0) return match; // Not a multi-line table
+
+        const headerRow = headerLine.trim().split('|').filter(c => c.length > 0);
+        const allRows = [headerRow, ...lines.map(line => line.split('|').map(c => c.trim()).filter(c => c.length > 0))];
+
+        let htmlTable = '<table class="editable-table" contenteditable="true" style="width: 100%; border-collapse: collapse; margin: 15px 0; font-family: var(--font-family-mono);">';
+        
+        // Header
+        htmlTable += '<thead style="background-color: rgba(99, 102, 241, 0.2);"><tr>' + allRows[0].map(h => `<th style="border: 1px solid var(--border); padding: 8px; text-align: left;">${h}</th>`).join('') + '</tr></thead><tbody>';
+
+        // Body (skip separators and header)
+        for (let i = 1; i < allRows.length; i++) {
+             // Skip markdown separator line (e.g., |---|---|)
+             if (allRows[i].every(c => c.includes('---') || c.length === 0)) continue; 
+             
+             htmlTable += '<tr>' + allRows[i].map(c => `<td style="border: 1px solid var(--border); padding: 8px;">${c}</td>`).join('') + '</tr>';
+        }
+        
+        htmlTable += '</tbody></table>';
+        return htmlTable;
+    });
+
+    // B. Standard Markdown to HTML
+    formattedContent = formattedContent
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/^(#+)\s*(.*)/gm, (match, hashes, content) => { 
+            const level = hashes.length > 3 ? 3 : hashes.length;
+            return `<h${level}>${content}</h${level}>`;
+        })
+        .replace(/^- (.*)/gm, '<ul><li>$1</li></ul>') 
+        .replace(/\n\n/g, '</p><p>') 
+        .replace(/\n/g, '<br>');
+
+    if (!formattedContent.trim().match(/^(<h|<ul|<div|<p>|<table)/i)) {
+        formattedContent = `<p>${formattedContent}</p>`;
+    }
+    
+    // --- 2. IMAGE PLACEHOLDER PROCESSING (Kept the same) ---
+    formattedContent = formattedContent.replace(/\[IMAGE UPLOAD ZONE: ([^\]]+)\]/g, (match, content) => {
+        const id = 'img-placeholder-uploaded-' + Math.random().toString(36).substring(2, 9);
+        return `<div id="${id}" class="image-upload-zone" style="text-align: center; padding: 40px 20px; margin: 20px auto; border: 3px dashed var(--warning); border-radius: 12px; max-width: 500px; cursor: pointer;"
+                    title="Click or drag image here for: ${content}"
+                    onclick="triggerProjectImageUpload(event, '${id}')">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🖼️</div>
+                    <p style="font-weight: 600; color: var(--warning); margin: 0;">${content}</p>
+                    <p style="font-size: 13px; color: var(--text-gray); margin: 0;">(Click or Drop Image)</p>
+                </div>`;
+    });
+    
+    formattedContent = formattedContent.replace(/###\w+###.*?\n/g, '');
+    
+    // --- 3. Final Rendering ---
+    notesContainer.innerHTML = `
+        <div id="editable-upload-content" class="content-display" contenteditable="true" style="padding: 32px; line-height: 1.8; max-width: 900px; margin: 0 auto; border: 2px dashed var(--warning);">
+            <h2 style="margin-bottom: 24px; color: var(--warning);">📝 Editing Upload: ${fileName} (AI Cleaned & Editable)</h2>
+            <div style="font-size: 15px;">${formattedContent}</div> 
+        </div>
+        <input type="file" id="project-image-input" accept="image/*" style="display: none;">
+    `;
+    
+    // Enable export buttons
+    document.getElementById('export-notes-pdf-btn').disabled = false;
+    document.getElementById('export-notes-docx-btn').disabled = false;
+    document.getElementById('export-notes-epub-btn').disabled = false;
+    document.getElementById('export-notes-mp3-btn').disabled = false;
+    
+    // Re-attach drop listeners
+    attachProjectImageDropListeners(); 
+}
+
+
 /**
  * Shows a top-level page.
  * @param {string} pageId The ID of the page to show.

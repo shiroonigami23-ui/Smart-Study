@@ -2,8 +2,11 @@
 // UPLOAD & CONTENT GENERATION
 // ===================================
 
+// file: content.js (Complete Replacement of handleFileUpload)
+
 /**
  * Handles the file upload (drag/drop or browse).
+ * CRITICAL CHANGE: Only extracts text and stores it. AI cleanup and editing start when the user clicks 'Convert/Edit'.
  * @param {File} file The file object.
  */
 async function handleFileUpload(file) {
@@ -28,12 +31,14 @@ async function handleFileUpload(file) {
     showLoading('Processing file...'); // from utils.js
 
     try {
-        // processFile is in fileApi.js
-        const extractedText = await processFile(file); 
-        appState.uploadedContent = extractedText;
-        appState.uploadedContentType = file.type;
-        document.getElementById('content-text').value = extractedText;
+        // 1. Process File to get raw text (in fileApi.js)
+        const rawExtractedText = await processFile(file); 
 
+        // 2. Store the raw extracted version (no AI cleanup yet)
+        appState.uploadedContent = rawExtractedText;
+        appState.uploadedContentType = file.type;
+        appState.isUploadedContentEditable = false; // Flag is set to true only upon manual conversion
+        
         // --- File Type Badge Logic ---
         let fileExt = fileName.split('.').pop().toLowerCase();
         
@@ -53,8 +58,8 @@ async function handleFileUpload(file) {
         // -------------------------------------------------
 
         hideLoading(); // from utils.js
-        showToast('File processed successfully!', 'success'); // from utils.js
-        addRecentActivity('📁', `Uploaded ${file.name}`, 'Just now'); // from ui.js
+        showToast('File processed successfully! Ready for generation or conversion.', 'success'); // from utils.js
+        addRecentActivity('📁', `Uploaded ${file.name} (Raw Text Extracted)`, 'Just now'); // from ui.js
         addXP(20, 'Uploaded study file'); // from gamification.js
 
         // Save to Firestore (function in firebaseApi.js)
@@ -68,9 +73,88 @@ async function handleFileUpload(file) {
     }
 }
 
+// file: content.js (Add new function)
+
 /**
- * Generates content (quiz, flashcards, notes, summary) based on type.
- * @param {string} type 'quiz', 'flashcards', 'notes', or 'summary'.
+ * Initiates AI cleanup and navigation to the Notes section for editing/conversion.
+ */
+async function startEditableConversion() {
+    if (!appState.uploadedContent) {
+        showToast('Please upload a file first.', 'warning');
+        return;
+    }
+
+    showLoading('AI is cleaning and structuring content for editing...');
+
+    try {
+        // 1. Run the AI Cleanup on the RAW uploaded content (in geminiApi.js)
+        // We use the raw text content here, not the content from the editor.
+        const cleanedText = await cleanAndReformatContent(appState.uploadedContent);
+        
+        // 2. Set state for editing
+        appState.isUploadedContentEditable = true; // Set flag
+        appState.generatedNotes = cleanedText; // Use this as the source for display
+
+        // 3. Display the cleaned, editable content (in ui.js)
+        displayEditableUpload(cleanedText, appState.uploadedFileName || 'Uploaded_Document.pdf'); 
+        
+        // 4. Navigate to the Notes view (which now serves as the editor)
+        navigateToSection('notes'); 
+
+        hideLoading();
+        showToast('Content is now clean, structured, and ready for editing!', 'success');
+        addXP(30, 'Prepared content for editing');
+
+    } catch (error) {
+        hideLoading();
+        console.error('AI Cleanup error:', error);
+        showToast('AI cleanup failed. Check console for details.', 'error');
+    }
+}
+
+
+
+/**
+ * Initiates AI cleanup and navigation to the Notes section for editing/conversion.
+ */
+async function startEditableConversion() {
+    if (!appState.uploadedContent) {
+        showToast('Please upload a file first.', 'warning');
+        return;
+    }
+
+    showLoading('AI is cleaning and structuring content for editing...');
+
+    try {
+        // 1. Run the AI Cleanup on the RAW uploaded content (in geminiApi.js)
+        // We use the raw text content here, not the content from the editor.
+        const cleanedText = await cleanAndReformatContent(appState.uploadedContent);
+        
+        // 2. Set state for editing
+        appState.isUploadedContentEditable = true; // Set flag
+        appState.generatedNotes = cleanedText; // Use this as the source for display
+
+        // 3. Display the cleaned, editable content (in ui.js)
+        displayEditableUpload(cleanedText, appState.uploadedFileName || 'Uploaded_Document.pdf'); 
+        
+        // 4. Navigate to the Notes view (which now serves as the editor)
+        navigateToSection('notes'); 
+
+        hideLoading();
+        showToast('Content is now clean, structured, and ready for editing!', 'success');
+        addXP(30, 'Prepared content for editing');
+
+    } catch (error) {
+        hideLoading();
+        console.error('AI Cleanup error:', error);
+        showToast('AI cleanup failed. Check console for details.', 'error');
+    }
+}
+
+
+/**
+ * Generates content (quiz, flashcards, notes, summary, paper, project file) based on type.
+ * @param {string} type 'quiz', 'flashcards', 'notes', 'summary', 'research_paper', or 'project_file'.
  */
 async function generateContent(type) {
     const content = document.getElementById('content-text').value.trim() || appState.uploadedContent;
@@ -79,6 +163,11 @@ async function generateContent(type) {
         showToast('Please upload a file or paste some content first', 'warning');
         return;
     }
+
+    // --- CRITICAL FIX: CLEAR EDITABLE FLAG ---
+    // Any new AI generation clears the previous editable upload state.
+    appState.isUploadedContentEditable = false; 
+    // ------------------------------------------
 
     const subject = document.getElementById('subject-select').value;
     const difficulty = document.getElementById('difficulty-select').value;
@@ -137,10 +226,10 @@ async function generateContent(type) {
             appState.generatedSummary = summary; // Store for export
             hideLoading(); 
             showToast('Summary generated successfully! Showing summary.', 'success'); 
-            addRecentActivity('塘', 'Generated content summary', 'Just now'); 
+            addRecentActivity('📄', 'Generated content summary', 'Just now'); 
             displayGeneratedSummary(summary); // from ui.js (uses modal)
             addXP(30, 'Generated summary'); // from gamification.js
-        } else if (type === 'research_paper') { // <--- EXISTING RESEARCH PAPER LOGIC
+        } else if (type === 'research_paper') { 
             const paper = await generateResearchPaperOutline(content, subject || 'General');
             if (!paper) {
                 hideLoading();
@@ -151,11 +240,11 @@ async function generateContent(type) {
             appState.generatedProjectFile = null; // Clear project file state
             hideLoading(); 
             showToast('Research paper outline generated successfully!', 'success'); 
-            addRecentActivity('答', 'Generated research paper outline', 'Just now'); 
+            addRecentActivity('📚', 'Generated research paper outline', 'Just now'); 
             displayGeneratedResearchPaper(paper); // from ui.js
             navigateToSection('notes'); 
             addXP(75, 'Generated research paper outline'); 
-        } else if (type === 'project_file') { // <--- NEW PROJECT FILE LOGIC
+        } else if (type === 'project_file') { 
             const projectName = document.getElementById('project-name-input').value.trim() || 'Untitled Project';
             const projectFile = await generateProjectFile(content, subject || 'General', projectName); // New function call
             if (!projectFile) {
@@ -184,6 +273,7 @@ async function generateContent(type) {
         showToast('Error generating content. Please try again.', 'error'); 
     }
 }
+
 
 // ===================================
 // FILE CONVERSION LOGIC (NEW SECTION)

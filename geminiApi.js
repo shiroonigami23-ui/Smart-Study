@@ -485,6 +485,86 @@ Generate the summary now:`;
     return response;
 }
 
+// file: geminiApi.js (Add this function)
+
+/**
+ * Uses Gemini to clean and reformat raw, poorly structured content 
+ * from file extraction (especially tables and vertical code).
+ * @param {string} rawContent The raw extracted text.
+ * @returns {Promise<string>} Cleaned content in standardized Markdown format.
+ */
+async function cleanAndReformatContent(rawContent) {
+    const prompt = `
+    --- INSTRUCTION START ---
+    You are an expert technical text formatter. Your task is to clean, restructure, and correct poorly formatted text extracted from a PDF.
+    **GOAL**: Reconstruct tables using standard Markdown format (using '|' separators). Fix vertical breaks in technical structures (like DFA states Q, q0, q1, Sigma, Delta) by placing them on a single line. Preserve all meaningful text and formatting (like headings H2, H3).
+    --- INSTRUCTION END ---
+
+    **CLEANING RULES:**
+    1. **Normalize Structure**: Ensure there are no floating words or stacked characters (like 'q' stacked over '0'). Join them horizontally where appropriate (e.g., 'q 0' should be 'q0').
+    2. **Tables**: Identify text that appears to be tabular data (like 'State Transition Table' data with columns) and convert it into a valid **Markdown Table**.
+    3. **General Formatting**: Preserve paragraph breaks and headings.
+
+    --- RAW EXTRACTED CONTENT ---
+    ${rawContent}
+    --- END RAW EXTRACTED CONTENT ---
+
+    Provide the cleaned, reformatted content now in Markdown:`;
+
+    const response = await callGeminiAPI(prompt);
+
+    if (!response) {
+        showToast("AI formatting failed. Using raw, uncleaned text.", "warning");
+        return rawContent;
+    }
+
+    return response;
+}
+
+// file: geminiApi.js (Complete replacement of generateExportReadyContent function)
+
+/**
+ * Uses Gemini to convert the final edited content (which may contain HTML tags,
+ * image markers, and user edits) into pure, clean Markdown suitable for export.
+ * @param {string} editedContent The HTML/Text content from the editable area.
+ * @param {string} format The target format hint ('DOCX', 'EPUB', 'PDF').
+ * @returns {Promise<string>} The AI-cleaned, pure Markdown text.
+ */
+async function generateExportReadyContent(editedContent, format) {
+    // CRITICAL: We need to remove the image markers and other technical tags so AI doesn't break them.
+    // The main.js handleExport will have already converted images/placeholders to plain markers.
+    
+    // We send the raw innerHTML to the AI for cleaning and re-formatting.
+    const prompt = `
+    --- INSTRUCTION START ---
+    **PERSONA**: You are a final document formatter.
+    **CONTEXT**: This content was edited by the user and contains text, headings, and Markdown tables.
+    **TASK**: Convert the content into pure, standardized Markdown format.
+    **CLEANING RULES**:
+    1. **Preserve Structure**: Maintain headings, lists, and **Markdown tables**.
+    2. **Crucially: DO NOT REMOVE** the following internal tags. Treat them as unchangeable text:
+        * Project File Tags (e.g., ###PROJECT_TITLE_IMAGE###)
+        * Image Data Markers (e.g., <<<IMAGE_...>>>)
+        * TOC/Pagebreak Tags (e.g., <<<TOC_PLACEHOLDER>>>)
+    3. **Remove Artifacts**: Remove all other HTML tags and unnecessary line breaks.
+
+    --- EDITED CONTENT ---
+    ${editedContent}
+    --- END EDITED CONTENT ---
+
+    Provide the final, clean Markdown content now:`;
+
+    const response = await callGeminiAPI(prompt);
+
+    if (!response) {
+        showToast("AI export formatting failed. Using raw, uncleaned text for export.", "warning");
+        return editedContent;
+    }
+
+    return response;
+}
+
+
 /**
  * Answers a question based on the uploaded content.
  * @param {string} question The user's question.
