@@ -13,7 +13,7 @@ const FIREBASE_CONFIG = {
 };
 
 // Gemini API Configuration - Using your provided key
-const GEMINI_API_KEY = "AIzaSyD5tQg_ls50hZGVX24zGqGN0nDbHM1xsNE";
+const GEMINI_API_KEY = "AIzaSyDpeXSmDxHQB6pLVlpx6wfYyM8fVkhPUPY";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
 // Cloudinary Configuration
